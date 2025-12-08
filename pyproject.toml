@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pytest-beautiful-report"
+dynamic = ["version"]
+description = "A beautiful, zero-config HTML reporting plugin for PyTest and unittest."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.8"
+authors = [
+    { name = "Dhiraj Das", email = "dhirajdas.666@gmail.com" },
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Framework :: Pytest",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = [
+    "jinja2>=3.0",
+    "typing-extensions>=4.0",
+]
+
+[project.optional-dependencies]
+pytest = ["pytest>=6.0"]
+pdf = ["weasyprint"]
+slack = ["slack_sdk"]
+dev = [
+    "ruff",
+    "black",
+    "mypy",
+    "tox",
+    "sphinx",
+    "playwright",
+    "pytest-regressions",
+    "pytest>=6.0", # Dev needs pytest for testing the plugin
+]
+
+[project.scripts]
+beautiful-report = "beautiful_report.cli:main"
+
+[project.entry-points.pytest11]
+beautiful_report = "beautiful_report.plugin"
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "src/beautiful_report/_version.py"
+
+[tool.ruff]
+line-length = 120
+target-version = "py38"
+
+[tool.mypy]
+files = ["src", "tests"]
+strict = true
+warn_unused_ignores = true
+show_error_codes = true
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+testpaths = ["tests"]

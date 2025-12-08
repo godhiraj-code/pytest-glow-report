@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" class="antialiased">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/alpinejs" defer></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        /* Custom scrollbar for dark mode */
+        .dark ::-webkit-scrollbar { width: 8px; }
+        .dark ::-webkit-scrollbar-track { background: #1f2937; }
+        .dark ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+    </style>
+    <script>
+        // Dark mode logic
+        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark')
+        } else {
+            document.documentElement.classList.remove('dark')
+        }
+    </script>
+</head>
+<body class="bg-gray-50 text-slate-800 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-200"
+      x-data="{ 
+          search: '', 
+          filterOutcome: 'all',
+          toggleDarkMode() {
+              if (document.documentElement.classList.contains('dark')) {
+                  document.documentElement.classList.remove('dark');
+                  localStorage.theme = 'light';
+              } else {
+                  document.documentElement.classList.add('dark');
+                  localStorage.theme = 'dark';
+              }
+          },
+          matches(test) {
+              const s = this.search.toLowerCase();
+              const matchesSearch = test.nodeid.toLowerCase().includes(s);
+              const matchesFilter = this.filterOutcome === 'all' || test.outcome === this.filterOutcome;
+              return matchesSearch && matchesFilter;
+          }
+      }">
+
+    <!-- Navbar -->
+    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/90 backdrop-blur border-b border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-4">
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        Pytest Beautiful Report
+                    </h1>
+                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700">v{{ generated_at }}</span>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <!-- Search -->
+                    <div class="relative">
+                        <input x-model="search" type="text" placeholder="Search tests..." 
+                               class="w-64 pl-10 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                        <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+                    
+                    <!-- Filter -->
+                    <select x-model="filterOutcome" class="bg-gray-100 dark:bg-gray-700 rounded-lg py-2 px-3 outline-none">
+                        <option value="all">All Outcomes</option>
+                        <option value="passed">Passed</option>
+                        <option value="failed">Failed</option>
+                        <option value="skipped">Skipped</option>
+                    </select>
+
+                    <button @click="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <span class="dark:hidden">🌙</span>
+                        <span class="hidden dark:inline">☀️</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+                <div class="text-sm text-gray-500 dark:text-gray-400">Total Tests</div>
+                <div class="text-3xl font-bold mt-1">{{ summary.total }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-green-100 dark:border-green-900/30">
+                <div class="text-sm text-green-600 dark:text-green-400">Passed</div>
+                <div class="text-3xl font-bold mt-1 text-green-600 dark:text-green-400">{{ summary.passed }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-red-100 dark:border-red-900/30">
+                <div class="text-sm text-red-600 dark:text-red-400">Failed</div>
+                <div class="text-3xl font-bold mt-1 text-red-600 dark:text-red-400">{{ summary.failed }}</div>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-yellow-100 dark:border-yellow-900/30">
+                <div class="text-sm text-yellow-600 dark:text-yellow-400">Skipped</div>
+                <div class="text-3xl font-bold mt-1 text-yellow-600 dark:text-yellow-400">{{ summary.skipped }}</div>
+            </div>
+        </div>
+
+        <!-- History Chart Placeholder (could use Chart.js if offline, or simple SVG sparkline) -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-8 shadow-sm">
+             <h2 class="text-lg font-semibold mb-4">History</h2>
+             <div class="flex gap-2 items-end h-24">
+                 {% for run in history %}
+                 <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-t relative group" style="height: {{ (run.passed / (run.passed + run.failed + run.skipped)) * 100 }}%">
+                     <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs p-1 rounded whitespace-nowrap">
+                         {{ run.timestamp }}<br>P:{{ run.passed }} F:{{ run.failed }} S:{{ run.skipped }}
+                     </div>
+                 </div>
+                 {% endfor %}
+             </div>
+        </div>
+
+        <!-- Tests List -->
+        <div class="space-y-4">
+            {% for test in tests %}
+            <div x-show="matches({{ test | tojson | forceescape }})" 
+                 class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 transition-all hover:shadow-md"
+                 :class="{
+                    'border-green-500': '{{ test.outcome }}' === 'passed',
+                    'border-red-500': '{{ test.outcome }}' === 'failed',
+                    'border-yellow-500': '{{ test.outcome }}' === 'skipped'
+                 }">
+                <div class="p-4" x-data="{ open: false }">
+                    <div class="flex items-center justify-between cursor-pointer" @click="open = !open">
+                        <div class="flex flex-col">
+                            <h3 class="font-medium text-lg">{{ test.nodeid }}</h3>
+                            <div class="text-sm text-gray-500">Duration: {{ "%.4f"|format(test.duration) }}s</div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                             <span class="px-3 py-1 rounded-full text-sm font-medium capitalize"
+                                   class="{'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': '{{ test.outcome }}' === 'passed',
+                                           'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': '{{ test.outcome }}' === 'failed',
+                                           'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400': '{{ test.outcome }}' === 'skipped'}">
+                                 {{ test.outcome }}
+                             </span>
+                             <svg x-show="!open" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                             <svg x-show="open" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
+                        </div>
+                    </div>
+                    
+                    <!-- Details -->
+                    <div x-show="open" x-collapse class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                        {% if test.longrepr %}
+                        <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg font-mono text-sm overflow-x-auto text-red-600 dark:text-red-400">
+                            {{ test.longrepr }}
+                        </div>
+                        {% endif %}
+                        <!-- Attachments would go here -->
+                        {% if test.sections %}
+                        <div class="mt-2">
+                            <h4 class="font-semibold text-sm text-gray-600 dark:text-gray-400">Captured Output:</h4>
+                            {% for section in test.sections %}
+                            <details class="group mt-1">
+                                <summary class="cursor-pointer text-sm text-indigo-600 dark:text-indigo-400">{{ section[0] }}</summary>
+                                <pre class="p-2 bg-gray-50 dark:bg-gray-900 rounded text-xs mt-1 overflow-x-auto">{{ section[1] }}</pre>
+                            </details>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <footer class="mt-12 py-8 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 text-center text-gray-400 text-sm">
+            Generated by pytest-beautiful-report
+        </div>
+    </footer>
+</body>
+</html>
