@@ -1,179 +1,997 @@
 <!DOCTYPE html>
-<html lang="en" class="antialiased">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/alpinejs" defer></script>
-    <style>
-        [x-cloak] { display: none !important; }
-        /* Custom scrollbar for dark mode */
-        .dark ::-webkit-scrollbar { width: 8px; }
-        .dark ::-webkit-scrollbar-track { background: #1f2937; }
-        .dark ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
-    </style>
     <script>
-        // Dark mode logic
-        if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-            document.documentElement.classList.add('dark')
-        } else {
-            document.documentElement.classList.remove('dark')
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s ease-in-out infinite',
+                        'gradient': 'gradient 8s ease infinite',
+                        'slide-up': 'slideUp 0.5s ease-out',
+                        'fade-in': 'fadeIn 0.3s ease-out',
+                    }
+                }
+            }
         }
     </script>
+    
+    <!-- Alpine.js -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
+        
+        /* Animated gradient background */
+        @keyframes gradient {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .animate-gradient {
+            background-size: 200% 200%;
+            animation: gradient 8s ease infinite;
+        }
+        
+        /* Glassmorphism */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.8);
+        }
+        
+        /* Glowing effects */
+        .glow-green { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+        .glow-red { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+        .glow-amber { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+        .glow-primary { box-shadow: 0 0 30px rgba(99, 102, 241, 0.4); }
+        
+        /* Card hover effects */
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .card-hover:hover {
+            transform: translateY(-4px) scale(1.02);
+        }
+        
+        /* Shimmer loading effect */
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            background-size: 200% 100%;
+            animation: shimmer 2s infinite;
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #06b6d4 0%, #14b8a6 50%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Floating orbs background */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.5;
+            animation: float 8s ease-in-out infinite;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .dark ::-webkit-scrollbar-thumb { background: #475569; }
+        
+        /* Screenshot thumbnail */
+        .screenshot-thumb {
+            transition: transform 0.3s ease;
+        }
+        .screenshot-thumb:hover {
+            transform: scale(1.5);
+            z-index: 50;
+        }
+        
+        /* Step indicator */
+        .step-badge {
+            min-width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        /* Particle canvas */
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        /* Success celebration */
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            animation: confetti-fall 3s ease-in-out forwards;
+        }
+        
+        /* Neon glow for 100% pass */
+        @keyframes neon-pulse {
+            0%, 100% { 
+                box-shadow: 0 0 5px #10b981, 0 0 10px #10b981, 0 0 20px #10b981, 0 0 40px #10b981;
+            }
+            50% { 
+                box-shadow: 0 0 10px #10b981, 0 0 20px #10b981, 0 0 40px #10b981, 0 0 80px #10b981;
+            }
+        }
+        
+        .neon-success {
+            animation: neon-pulse 2s ease-in-out infinite;
+        }
+        
+        /* Typewriter effect for title */
+        @keyframes typewriter {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+        
+        /* Counter animation */
+        .counter {
+            display: inline-block;
+        }
+        
+        /* Progress ring */
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 1s ease-out;
+        }
+        
+        /* Sparkle effect */
+        @keyframes sparkle {
+            0%, 100% { opacity: 0; transform: scale(0); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+        
+        .sparkle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: white;
+            border-radius: 50%;
+            animation: sparkle 1.5s ease-in-out infinite;
+        }
+    </style>
+    
+    <script>
+        // Dark Mode - runs immediately
+        (function() {
+            function setDarkMode(isDark) {
+                document.documentElement.classList.toggle('dark', isDark);
+                try { localStorage.setItem('theme', isDark ? 'dark' : 'light'); } catch(e) {}
+            }
+            
+            try {
+                const stored = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                setDarkMode(stored === 'dark' || (!stored && prefersDark));
+            } catch(e) {
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    document.documentElement.classList.add('dark');
+                }
+            }
+            
+            window.toggleDarkMode = function() {
+                const isDark = document.documentElement.classList.contains('dark');
+                setDarkMode(!isDark);
+            };
+        })();
+        
+        // Copy executive summary to clipboard for email
+        function copyExecutiveSummary() {
+            const content = document.getElementById('emailSummaryContent');
+            if (!content) return;
+            
+            const text = content.innerText.trim();
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.getElementById('copyBtnText');
+                const originalText = btn.innerText;
+                btn.innerText = '✓ Copied!';
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                }, 2000);
+            }).catch(err => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                textArea.style.position = 'fixed';
+                textArea.style.left = '-9999px';
+                document.body.appendChild(textArea);
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    const btn = document.getElementById('copyBtnText');
+                    btn.innerText = '✓ Copied!';
+                    setTimeout(() => {
+                        btn.innerText = 'Copy Summary for Email';
+                    }, 2000);
+                } catch(e) {
+                    alert('Failed to copy. Please select and copy manually.');
+                }
+                document.body.removeChild(textArea);
+            });
+        }
+        
+        // Particle animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('particles-canvas');
+            if (!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const particles = [];
+            const particleCount = 50;
+            
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    radius: Math.random() * 2 + 1,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    opacity: Math.random() * 0.5 + 0.2
+                });
+            }
+            
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                particles.forEach(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    
+                    if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+                    if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+                    
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(20, 184, 166, ${p.opacity})`;
+                    ctx.fill();
+                });
+                
+                // Draw connections
+                particles.forEach((p1, i) => {
+                    particles.slice(i + 1).forEach(p2 => {
+                        const dx = p1.x - p2.x;
+                        const dy = p1.y - p2.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (dist < 150) {
+                            ctx.beginPath();
+                            ctx.moveTo(p1.x, p1.y);
+                            ctx.lineTo(p2.x, p2.y);
+                            ctx.strokeStyle = `rgba(20, 184, 166, ${0.1 * (1 - dist / 150)})`;
+                            ctx.stroke();
+                        }
+                    });
+                });
+                
+                requestAnimationFrame(animate);
+            }
+            
+            animate();
+            
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+            
+            // Confetti for 100% pass rate
+            {% if summary.total > 0 and summary.failed == 0 and summary.skipped == 0 %}
+            setTimeout(() => {
+                const colors = ['#10b981', '#14b8a6', '#06b6d4', '#22d3ee', '#34d399'];
+                for (let i = 0; i < 100; i++) {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 2 + 's';
+                    confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 5000);
+                }
+            }, 500);
+            {% endif %}
+        });
+    </script>
 </head>
-<body class="bg-gray-50 text-slate-800 dark:bg-gray-900 dark:text-gray-200 transition-colors duration-200"
-      x-data="{ 
-          search: '', 
-          filterOutcome: 'all',
-          toggleDarkMode() {
-              if (document.documentElement.classList.contains('dark')) {
-                  document.documentElement.classList.remove('dark');
-                  localStorage.theme = 'light';
-              } else {
-                  document.documentElement.classList.add('dark');
-                  localStorage.theme = 'dark';
-              }
-          },
-          matches(test) {
-              const s = this.search.toLowerCase();
-              const matchesSearch = test.nodeid.toLowerCase().includes(s);
-              const matchesFilter = this.filterOutcome === 'all' || test.outcome === this.filterOutcome;
-              return matchesSearch && matchesFilter;
-          }
-      }">
 
-    <!-- Navbar -->
-    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-800/90 backdrop-blur border-b border-gray-200 dark:border-gray-700">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-16">
-                <div class="flex items-center gap-4">
-                    <h1 class="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        Pytest Beautiful Report
-                    </h1>
-                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 dark:bg-gray-700">v{{ generated_at }}</span>
+<body class="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 transition-colors duration-300 overflow-x-hidden">
+    
+    <!-- Particle Canvas -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- Animated Background Orbs -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none">
+        <div class="orb w-96 h-96 bg-cyan-500/30 dark:bg-cyan-500/20 -top-48 -left-48" style="animation-delay: 0s;"></div>
+        <div class="orb w-80 h-80 bg-teal-500/30 dark:bg-teal-500/20 top-1/2 -right-40" style="animation-delay: 2s;"></div>
+        <div class="orb w-64 h-64 bg-emerald-500/30 dark:bg-emerald-500/20 -bottom-32 left-1/3" style="animation-delay: 4s;"></div>
+    </div>
+
+    <div x-data="reportApp()" x-cloak class="relative">
+        
+        <!-- Header -->
+        <header class="sticky top-0 z-50 glass border-b border-slate-200/50 dark:border-slate-700/50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    
+                    <!-- Logo & Title -->
+                    <div class="flex items-center gap-4">
+                        {% if logo %}
+                        <img src="{{ logo }}" alt="Logo" class="h-10 w-auto rounded-xl shadow-lg">
+                        {% else %}
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500 flex items-center justify-center shadow-lg animate-gradient">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h1 class="text-xl font-bold gradient-text">{{ title }}</h1>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">{{ generated_at }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Controls -->
+                    <div class="flex items-center gap-3">
+                        <!-- Search -->
+                        <div class="relative group">
+                            <input type="text" x-model="search" placeholder="Search tests..."
+                                   class="w-48 md:w-64 pl-10 pr-4 py-2.5 text-sm rounded-xl bg-white/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all focus:w-72">
+                            <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                        </div>
+                        
+                        <!-- Dark Mode Toggle -->
+                        <button @click="window.toggleDarkMode()" 
+                                class="p-2.5 rounded-xl bg-white/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 hover:scale-110 transition-all duration-300" 
+                                aria-label="Toggle dark mode">
+                            <svg class="w-5 h-5 hidden dark:block text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>
+                            </svg>
+                            <svg class="w-5 h-5 block dark:hidden text-slate-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
+            
+            <!-- EXECUTIVE SUMMARY - For Business Users -->
+            {% set pass_rate = (summary.passed / summary.total * 100) if summary.total > 0 else 0 %}
+            {% set quality_score = pass_rate %}
+            {% set risk_level = "Low" if pass_rate >= 95 else ("Medium" if pass_rate >= 80 else "High") %}
+            {% set risk_color = "emerald" if pass_rate >= 95 else ("amber" if pass_rate >= 80 else "red") %}
+            {% set avg_duration = (duration / summary.total) if summary.total > 0 else 0 %}
+            
+            <div class="mb-8 glass rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-2xl">
+                <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 mb-8">
+                    <div>
+                        <h2 class="text-2xl font-bold gradient-text">Executive Summary</h2>
+                        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Quality metrics at a glance for stakeholders</p>
+                    </div>
+                    
+                    <!-- Quality Score Badge -->
+                    <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <!-- Circular Progress -->
+                            <svg class="w-24 h-24 progress-ring" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" fill="none" stroke-width="8" 
+                                        class="stroke-slate-200 dark:stroke-slate-700"/>
+                                <circle cx="50" cy="50" r="40" fill="none" stroke-width="8"
+                                        stroke-linecap="round"
+                                        class="progress-ring__circle stroke-{{ risk_color }}-500"
+                                        stroke-dasharray="251.2"
+                                        stroke-dashoffset="{{ 251.2 - (251.2 * pass_rate / 100) }}"/>
+                            </svg>
+                            <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                <span class="text-2xl font-black text-{{ risk_color }}-600 dark:text-{{ risk_color }}-400">{{ "%.0f"|format(pass_rate) }}%</span>
+                                <span class="text-xs text-slate-500 dark:text-slate-400">Quality</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Risk Level -->
+                        <div class="px-6 py-3 rounded-2xl bg-{{ risk_color }}-100 dark:bg-{{ risk_color }}-900/30 border border-{{ risk_color }}-200 dark:border-{{ risk_color }}-800">
+                            <div class="text-xs font-medium text-{{ risk_color }}-600 dark:text-{{ risk_color }}-400 uppercase tracking-wide">Risk Level</div>
+                            <div class="text-xl font-bold text-{{ risk_color }}-700 dark:text-{{ risk_color }}-300">{{ risk_level }}</div>
+                        </div>
+                    </div>
                 </div>
                 
-                <div class="flex items-center gap-4">
-                    <!-- Search -->
-                    <div class="relative">
-                        <input x-model="search" type="text" placeholder="Search tests..." 
-                               class="w-64 pl-10 pr-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-700 focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
-                        <svg class="w-5 h-5 absolute left-3 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <!-- Key Business Metrics -->
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <!-- Tests Executed -->
+                    <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
+                        <div class="text-3xl font-black text-slate-800 dark:text-slate-200">{{ summary.total }}</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Tests Executed</div>
                     </div>
                     
-                    <!-- Filter -->
-                    <select x-model="filterOutcome" class="bg-gray-100 dark:bg-gray-700 rounded-lg py-2 px-3 outline-none">
-                        <option value="all">All Outcomes</option>
-                        <option value="passed">Passed</option>
-                        <option value="failed">Failed</option>
-                        <option value="skipped">Skipped</option>
-                    </select>
-
-                    <button @click="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
-                        <span class="dark:hidden">🌙</span>
-                        <span class="hidden dark:inline">☀️</span>
+                    <!-- Success Rate -->
+                    <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
+                        <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ "%.1f"|format(pass_rate) }}%</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Success Rate</div>
+                    </div>
+                    
+                    <!-- Failures -->
+                    <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
+                        <div class="text-3xl font-black text-red-600 dark:text-red-400">{{ summary.failed }}</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Failures</div>
+                    </div>
+                    
+                    <!-- Execution Time -->
+                    <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
+                        <div class="text-3xl font-black text-cyan-600 dark:text-cyan-400">{{ "%.1f"|format(duration) }}s</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Total Duration</div>
+                    </div>
+                    
+                    <!-- Avg Test Time -->
+                    <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
+                        <div class="text-3xl font-black text-violet-600 dark:text-violet-400">{{ "%.2f"|format(avg_duration) }}s</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Avg per Test</div>
+                    </div>
+                    
+                    <!-- Stability (based on history) -->
+                    {% if history|length > 1 %}
+                    {% set recent_runs = history[:5] %}
+                    {% set stability = (recent_runs | selectattr('failed', 'equalto', 0) | list | length) / (recent_runs | length) * 100 %}
+                    <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
+                        <div class="text-3xl font-black text-teal-600 dark:text-teal-400">{{ "%.0f"|format(stability) }}%</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Stability (5 runs)</div>
+                    </div>
+                    {% else %}
+                    <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
+                        <div class="text-3xl font-black text-slate-400">--</div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Stability</div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Status Message for Business -->
+                <div class="mt-6 p-4 rounded-xl {% if summary.failed == 0 %}bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800{% else %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% endif %}">
+                    {% if summary.failed == 0 %}
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <div>
+                            <p class="font-semibold text-emerald-700 dark:text-emerald-300">All Tests Passing</p>
+                            <p class="text-sm text-emerald-600 dark:text-emerald-400">The application meets quality standards and is ready for release.</p>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="flex items-center gap-3">
+                        <svg class="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <div>
+                            <p class="font-semibold text-red-700 dark:text-red-300">{{ summary.failed }} Test{{ "s" if summary.failed > 1 else "" }} Failed</p>
+                            <p class="text-sm text-red-600 dark:text-red-400">Review the failures below before proceeding with release.</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Copy to Email Button -->
+                <div class="mt-6 flex justify-end">
+                    <button onclick="copyExecutiveSummary()" 
+                            class="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 font-medium text-sm">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                        </svg>
+                        <span id="copyBtnText">Copy Summary for Email</span>
                     </button>
                 </div>
-            </div>
-        </div>
-    </nav>
+                
+                <!-- Hidden email content template -->
+                <div id="emailSummaryContent" style="display: none;">
+📊 TEST EXECUTION SUMMARY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-                <div class="text-sm text-gray-500 dark:text-gray-400">Total Tests</div>
-                <div class="text-3xl font-bold mt-1">{{ summary.total }}</div>
-            </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-green-100 dark:border-green-900/30">
-                <div class="text-sm text-green-600 dark:text-green-400">Passed</div>
-                <div class="text-3xl font-bold mt-1 text-green-600 dark:text-green-400">{{ summary.passed }}</div>
-            </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-red-100 dark:border-red-900/30">
-                <div class="text-sm text-red-600 dark:text-red-400">Failed</div>
-                <div class="text-3xl font-bold mt-1 text-red-600 dark:text-red-400">{{ summary.failed }}</div>
-            </div>
-            <div class="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-yellow-100 dark:border-yellow-900/30">
-                <div class="text-sm text-yellow-600 dark:text-yellow-400">Skipped</div>
-                <div class="text-3xl font-bold mt-1 text-yellow-600 dark:text-yellow-400">{{ summary.skipped }}</div>
-            </div>
-        </div>
+📅 Date: {{ generated_at }}
+🎯 Quality Score: {{ "%.1f"|format(pass_rate) }}%
+⚠️ Risk Level: {{ risk_level }}
 
-        <!-- History Chart Placeholder (could use Chart.js if offline, or simple SVG sparkline) -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl p-6 mb-8 shadow-sm">
-             <h2 class="text-lg font-semibold mb-4">History</h2>
-             <div class="flex gap-2 items-end h-24">
-                 {% for run in history %}
-                 <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-t relative group" style="height: {{ (run.passed / (run.passed + run.failed + run.skipped)) * 100 }}%">
-                     <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs p-1 rounded whitespace-nowrap">
-                         {{ run.timestamp }}<br>P:{{ run.passed }} F:{{ run.failed }} S:{{ run.skipped }}
-                     </div>
-                 </div>
-                 {% endfor %}
-             </div>
-        </div>
+📈 RESULTS BREAKDOWN
+━━━━━━━━━━━━━━━━━━━
+✅ Passed:  {{ summary.passed }}
+❌ Failed:  {{ summary.failed }}
+⏭️ Skipped: {{ summary.skipped }}
+📋 Total:   {{ summary.total }}
 
-        <!-- Tests List -->
-        <div class="space-y-4">
-            {% for test in tests %}
-            <div x-show="matches({{ test | tojson | forceescape }})" 
-                 class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border-l-4 transition-all hover:shadow-md"
-                 :class="{
-                    'border-green-500': '{{ test.outcome }}' === 'passed',
-                    'border-red-500': '{{ test.outcome }}' === 'failed',
-                    'border-yellow-500': '{{ test.outcome }}' === 'skipped'
-                 }">
-                <div class="p-4" x-data="{ open: false }">
-                    <div class="flex items-center justify-between cursor-pointer" @click="open = !open">
-                        <div class="flex flex-col">
-                            <h3 class="font-medium text-lg">{{ test.nodeid }}</h3>
-                            <div class="text-sm text-gray-500">Duration: {{ "%.4f"|format(test.duration) }}s</div>
-                        </div>
-                        <div class="flex items-center gap-2">
-                             <span class="px-3 py-1 rounded-full text-sm font-medium capitalize"
-                                   class="{'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400': '{{ test.outcome }}' === 'passed',
-                                           'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400': '{{ test.outcome }}' === 'failed',
-                                           'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400': '{{ test.outcome }}' === 'skipped'}">
-                                 {{ test.outcome }}
-                             </span>
-                             <svg x-show="!open" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
-                             <svg x-show="open" class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"></path></svg>
-                        </div>
-                    </div>
-                    
-                    <!-- Details -->
-                    <div x-show="open" x-collapse class="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
-                        {% if test.longrepr %}
-                        <div class="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg font-mono text-sm overflow-x-auto text-red-600 dark:text-red-400">
-                            {{ test.longrepr }}
-                        </div>
-                        {% endif %}
-                        <!-- Attachments would go here -->
-                        {% if test.sections %}
-                        <div class="mt-2">
-                            <h4 class="font-semibold text-sm text-gray-600 dark:text-gray-400">Captured Output:</h4>
-                            {% for section in test.sections %}
-                            <details class="group mt-1">
-                                <summary class="cursor-pointer text-sm text-indigo-600 dark:text-indigo-400">{{ section[0] }}</summary>
-                                <pre class="p-2 bg-gray-50 dark:bg-gray-900 rounded text-xs mt-1 overflow-x-auto">{{ section[1] }}</pre>
-                            </details>
-                            {% endfor %}
-                        </div>
-                        {% endif %}
-                    </div>
+⏱️ PERFORMANCE
+━━━━━━━━━━━━━━
+Total Duration: {{ "%.2f"|format(duration) }}s
+Avg per Test:   {{ "%.2f"|format(avg_duration) }}s
+
+{% if environment %}
+🌐 ENVIRONMENT
+━━━━━━━━━━━━━━
+{% for key, value in environment.items() %}{{ key }}: {{ value }}
+{% endfor %}{% endif %}
+
+📌 STATUS
+━━━━━━━━
+{% if summary.failed == 0 %}✅ All tests passing - Ready for release{% else %}⚠️ {{ summary.failed }} test(s) failed - Review required{% endif %}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Generated by pytest-glow-report
                 </div>
             </div>
-            {% endfor %}
-        </div>
-    </main>
-
-    <footer class="mt-12 py-8 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
-        <div class="max-w-7xl mx-auto px-4 text-center text-gray-400 text-sm">
-            Generated by pytest-beautiful-report
-        </div>
-    </footer>
+            
+            <!-- Summary Cards - CLICKABLE -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                
+                <!-- Total - Click to show all -->
+                <button @click="filter = 'all'" 
+                        :class="{ 'ring-2 ring-cyan-500 ring-offset-2 dark:ring-offset-slate-900': filter === 'all' }"
+                        class="card-hover bg-gradient-to-br from-cyan-500 via-teal-500 to-emerald-500 rounded-2xl p-5 text-white shadow-xl glow-primary animate-gradient cursor-pointer text-left">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-white/80">Total Tests</p>
+                            <p class="text-4xl font-black mt-1">{{ summary.total }}</p>
+                        </div>
+                        <div class="w-14 h-14 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur">
+                            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-xs text-white/60 mt-3">Click to show all</p>
+                </button>
+                
+                <!-- Passed - Click to filter -->
+                <button @click="filter = 'passed'" 
+                        :class="{ 'ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-slate-900': filter === 'passed' }"
+                        class="card-hover bg-white dark:bg-slate-800 rounded-2xl p-5 border-2 border-emerald-200 dark:border-emerald-800/50 shadow-lg hover:glow-green cursor-pointer text-left">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-emerald-600 dark:text-emerald-400">Passed</p>
+                            <p class="text-4xl font-black text-emerald-600 dark:text-emerald-400 mt-1">{{ summary.passed }}</p>
+                        </div>
+                        <div class="w-14 h-14 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                    {% set pass_rate = (summary.passed / summary.total * 100) if summary.total > 0 else 0 %}
+                    <div class="mt-3 h-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-1000" style="width: {{ pass_rate }}%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">{{ "%.1f"|format(pass_rate) }}% pass rate</p>
+                </button>
+                
+                <!-- Failed - Click to filter -->
+                <button @click="filter = 'failed'" 
+                        :class="{ 'ring-2 ring-red-500 ring-offset-2 dark:ring-offset-slate-900': filter === 'failed' }"
+                        class="card-hover bg-white dark:bg-slate-800 rounded-2xl p-5 border-2 border-red-200 dark:border-red-800/50 shadow-lg hover:glow-red cursor-pointer text-left {% if summary.failed > 0 %}animate-pulse-slow{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-red-600 dark:text-red-400">Failed</p>
+                            <p class="text-4xl font-black text-red-600 dark:text-red-400 mt-1">{{ summary.failed }}</p>
+                        </div>
+                        <div class="w-14 h-14 rounded-xl bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </div>
+                    </div>
+                    {% set fail_rate = (summary.failed / summary.total * 100) if summary.total > 0 else 0 %}
+                    <div class="mt-3 h-2 bg-red-100 dark:bg-red-900/30 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-red-400 to-red-600 rounded-full" style="width: {{ fail_rate }}%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Click to filter</p>
+                </button>
+                
+                <!-- Skipped - Click to filter -->
+                <button @click="filter = 'skipped'" 
+                        :class="{ 'ring-2 ring-amber-500 ring-offset-2 dark:ring-offset-slate-900': filter === 'skipped' }"
+                        class="card-hover bg-white dark:bg-slate-800 rounded-2xl p-5 border-2 border-amber-200 dark:border-amber-800/50 shadow-lg hover:glow-amber cursor-pointer text-left">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-amber-600 dark:text-amber-400">Skipped</p>
+                            <p class="text-4xl font-black text-amber-600 dark:text-amber-400 mt-1">{{ summary.skipped }}</p>
+                        </div>
+                        <div class="w-14 h-14 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                            <svg class="w-7 h-7 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    {% set skip_rate = (summary.skipped / summary.total * 100) if summary.total > 0 else 0 %}
+                    <div class="mt-3 h-2 bg-amber-100 dark:bg-amber-900/30 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-amber-400 to-amber-600 rounded-full" style="width: {{ skip_rate }}%"></div>
+                    </div>
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Click to filter</p>
+                </button>
+            </div>
+            
+            <!-- Active Filter Indicator -->
+            <div x-show="filter !== 'all'" x-transition class="mb-6 flex items-center gap-2">
+                <span class="text-sm text-slate-500 dark:text-slate-400">Showing:</span>
+                <span class="px-3 py-1 rounded-full text-sm font-medium capitalize"
+                      :class="{
+                          'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400': filter === 'passed',
+                          'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': filter === 'failed',
+                          'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400': filter === 'skipped'
+                      }" x-text="filter"></span>
+                <button @click="filter = 'all'" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">Clear filter</button>
+            </div>
+            
+            <!-- History & Environment Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                
+                <!-- History Chart -->
+                <div class="lg:col-span-2 glass rounded-2xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                        </div>
+                        Test Run History
+                    </h2>
+                    
+                    {% if history|length > 0 %}
+                    <div class="flex items-end gap-2 h-40">
+                        {% for run in history|reverse %}
+                        {% set total = run.passed + run.failed + run.skipped %}
+                        <div class="flex-1 flex flex-col items-center group cursor-pointer">
+                            <div class="w-full relative">
+                                <!-- Tooltip -->
+                                <div class="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 hidden group-hover:block z-10 animate-fade-in">
+                                    <div class="bg-slate-900 dark:bg-slate-700 text-white text-xs px-4 py-3 rounded-xl shadow-2xl whitespace-nowrap">
+                                        <div class="font-bold mb-2">{{ run.timestamp[:10] }}</div>
+                                        <div class="flex gap-4">
+                                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> {{ run.passed }}</span>
+                                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span> {{ run.failed }}</span>
+                                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> {{ run.skipped }}</span>
+                                        </div>
+                                        <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3 h-3 bg-slate-900 dark:bg-slate-700 rotate-45"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Stacked Bar -->
+                                <div class="w-full h-32 rounded-xl overflow-hidden flex flex-col-reverse bg-slate-100 dark:bg-slate-800 group-hover:scale-105 transition-transform shadow-inner">
+                                    {% if total > 0 %}
+                                    <div class="w-full bg-gradient-to-t from-emerald-500 to-emerald-400 transition-all duration-500" style="height: {{ run.passed / total * 100 }}%"></div>
+                                    <div class="w-full bg-gradient-to-t from-red-500 to-red-400 transition-all duration-500" style="height: {{ run.failed / total * 100 }}%"></div>
+                                    <div class="w-full bg-gradient-to-t from-amber-500 to-amber-400 transition-all duration-500" style="height: {{ run.skipped / total * 100 }}%"></div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="text-xs text-slate-400 mt-2 font-medium">Run {{ loop.index }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="flex justify-center gap-6 mt-6 text-sm">
+                        <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-gradient-to-r from-emerald-400 to-emerald-600"></span> Passed</span>
+                        <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-gradient-to-r from-red-400 to-red-600"></span> Failed</span>
+                        <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-gradient-to-r from-amber-400 to-amber-600"></span> Skipped</span>
+                    </div>
+                    {% else %}
+                    <div class="h-40 flex items-center justify-center text-slate-400">
+                        <div class="text-center">
+                            <svg class="w-12 h-12 mx-auto mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                            </svg>
+                            <p>Run more tests to see trends!</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Environment Info -->
+                <div class="glass rounded-2xl p-6 border border-slate-200/50 dark:border-slate-700/50 shadow-xl">
+                    <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                        </div>
+                        Environment
+                    </h2>
+                    <dl class="space-y-3">
+                        {% for key, value in environment.items() %}
+                        <div class="flex justify-between items-center py-2.5 border-b border-slate-200/50 dark:border-slate-700/50 last:border-0">
+                            <dt class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ key }}</dt>
+                            <dd class="text-sm font-mono bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg">{{ value }}</dd>
+                        </div>
+                        {% endfor %}
+                        <div class="flex justify-between items-center py-2.5">
+                            <dt class="text-sm font-medium text-slate-500 dark:text-slate-400">Duration</dt>
+                            <dd class="text-sm font-mono bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1.5 rounded-lg font-bold">{{ "%.2f"|format(duration) }}s</dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+            
+            <!-- Test Results -->
+            <div class="glass rounded-2xl border border-slate-200/50 dark:border-slate-700/50 shadow-xl overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-200/50 dark:border-slate-700/50 bg-gradient-to-r from-slate-50 to-transparent dark:from-slate-900/50">
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+                            </svg>
+                        </div>
+                        Test Results
+                        <span class="ml-auto text-sm font-normal text-slate-500 dark:text-slate-400" x-text="`Showing ${filteredCount} of {{ summary.total }} tests`"></span>
+                    </h2>
+                </div>
+                
+                <div class="divide-y divide-slate-100 dark:divide-slate-800">
+                    {% for test in tests %}
+                    <div x-show="matchesFilter('{{ test.outcome }}') && matchesSearch('{{ test.nodeid }}')"
+                         x-data="{ expanded: false }"
+                         x-init="$watch('filter', () => { if (!matchesFilter('{{ test.outcome }}')) expanded = false; })"
+                         class="group animate-slide-up"
+                         style="animation-delay: {{ loop.index * 50 }}ms">
+                        <div @click="expanded = !expanded" 
+                             class="flex items-center gap-4 px-6 py-4 cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all">
+                            
+                            <!-- Step Number -->
+                            <div class="step-badge bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
+                                {{ loop.index }}
+                            </div>
+                            
+                            <!-- Status Icon -->
+                            {% if test.outcome == 'passed' %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/30">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                </svg>
+                            </div>
+                            {% elif test.outcome == 'failed' %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/30 animate-pulse">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </div>
+                            {% else %}
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-amber-500/30">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01"/>
+                                </svg>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Test Info -->
+                            <div class="flex-1 min-w-0">
+                                <p class="font-semibold text-sm truncate">{{ test.nodeid }}</p>
+                                <div class="flex items-center gap-3 mt-1">
+                                    <span class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        {{ "%.4f"|format(test.duration) }}s
+                                    </span>
+                                    {% if test.screenshots %}
+                                    <span class="text-xs text-indigo-500 flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                        {{ test.screenshots|length }} screenshot(s)
+                                    </span>
+                                    {% endif %}
+                                    {% if test.steps %}
+                                    <span class="text-xs text-purple-500 flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                        </svg>
+                                        {{ test.steps|length }} step(s)
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Expand Icon -->
+                            <svg class="w-5 h-5 text-slate-400 transition-transform duration-300" :class="{ 'rotate-180': expanded }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                        
+                        <!-- Expanded Details -->
+                        <div x-show="expanded" x-collapse class="px-6 pb-6 animate-fade-in">
+                            
+                            <!-- Steps -->
+                            {% if test.steps %}
+                            <div class="mb-4">
+                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                                    </svg>
+                                    Test Steps
+                                </h4>
+                                <div class="space-y-2">
+                                    {% for step in test.steps %}
+                                    <div class="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+                                        <span class="step-badge {% if step.status == 'passed' %}bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400{% else %}bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400{% endif %}">
+                                            {{ loop.index }}
+                                        </span>
+                                        <span class="flex-1 text-sm">{{ step.name }}</span>
+                                        <span class="text-xs text-slate-400">{{ step.duration }}s</span>
+                                        {% if step.status == 'passed' %}
+                                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                        </svg>
+                                        {% else %}
+                                        <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                        </svg>
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Screenshots -->
+                            {% if test.screenshots %}
+                            <div class="mb-4">
+                                <h4 class="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    Screenshots
+                                </h4>
+                                <div class="flex gap-3 flex-wrap">
+                                    {% for screenshot in test.screenshots %}
+                                    <a href="{{ screenshot }}" target="_blank" class="block">
+                                        <img src="{{ screenshot }}" alt="Screenshot {{ loop.index }}" 
+                                             class="h-20 w-auto rounded-lg border-2 border-slate-200 dark:border-slate-700 screenshot-thumb shadow-lg">
+                                    </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Error -->
+                            {% if test.longrepr %}
+                            <div class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-4">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h4 class="text-sm font-semibold text-red-700 dark:text-red-300 flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Error Details
+                                    </h4>
+                                    <button @click="navigator.clipboard.writeText(`{{ test.longrepr | replace('`', '\\`') | replace('\n', '\\n') }}`)" 
+                                            class="text-xs text-red-600 dark:text-red-400 hover:underline flex items-center gap-1">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                                        </svg>
+                                        Copy
+                                    </button>
+                                </div>
+                                <pre class="text-xs font-mono text-red-700 dark:text-red-300 whitespace-pre-wrap overflow-x-auto max-h-64 overflow-y-auto">{{ test.longrepr }}</pre>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Captured Output -->
+                            {% if test.sections %}
+                            <div class="space-y-2">
+                                {% for section in test.sections %}
+                                <details class="group/section">
+                                    <summary class="text-sm font-medium text-indigo-600 dark:text-indigo-400 cursor-pointer hover:underline flex items-center gap-2">
+                                        <svg class="w-4 h-4 transition-transform group-open/section:rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                        </svg>
+                                        {{ section[0] }}
+                                    </summary>
+                                    <pre class="mt-2 p-4 bg-slate-100 dark:bg-slate-900 rounded-xl text-xs font-mono overflow-x-auto border border-slate-200 dark:border-slate-800">{{ section[1] }}</pre>
+                                </details>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </main>
+        
+        <!-- Footer -->
+        <footer class="mt-12 py-8 border-t border-slate-200/50 dark:border-slate-700/50 glass">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Powered by <span class="font-bold gradient-text">pytest-glow-report</span>
+                </p>
+            </div>
+        </footer>
+    </div>
+    
+    <script>
+        function reportApp() {
+            return {
+                search: '',
+                filter: 'all',
+                
+                get filteredCount() {
+                    const tests = {{ tests | tojson }};
+                    return tests.filter(t => 
+                        this.matchesFilter(t.outcome) && 
+                        this.matchesSearch(t.nodeid)
+                    ).length;
+                },
+                
+                matchesSearch(nodeid) {
+                    if (!this.search) return true;
+                    return nodeid.toLowerCase().includes(this.search.toLowerCase());
+                },
+                
+                matchesFilter(outcome) {
+                    if (this.filter === 'all') return true;
+                    return outcome === this.filter;
+                }
+            }
+        }
+    </script>
 </body>
 </html>

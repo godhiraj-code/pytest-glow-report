@@ -2,11 +2,23 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
 
 # Distribution / Packaging
 dist/
 build/
 *.egg-info/
+*.egg
+.eggs/
+wheels/
+pip-wheel-metadata/
+MANIFEST
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
 
 # Unit Test / Coverage
 htmlcov/
@@ -20,10 +32,32 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
+pytest_cache/
 
-# Reports
+# Reports (generated)
 reports/
+*.sqlite
 
 # IDEs
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+*.env
+
+# Mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Ruff
+.ruff_cache/
