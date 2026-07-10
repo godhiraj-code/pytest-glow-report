@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["master"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["master"]
 
 jobs:
   test:
@@ -13,35 +13,68 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
-        include:
-          - os: ubuntu-latest
-            python-version: "3.8"
-            experimental: true
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install ".[dev,pytest]"
-        pip install tox
-        
-    - name: Run Tests
-      # We skip tox for simplicity in this generated workflow and define direct commands, 
-      # or use tox if installed.
-      run: |
-        pytest tests/
-      
-    - name: Verify Unittest Mode (No Pytest)
-      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
-      run: |
-        python -m venv venv-unittest
-        source venv-unittest/bin/activate
-        pip install .
-        if pip show pytest; then echo "Pytest should not be installed"; exit 1; fi
-        glow-report run -- python -m unittest discover examples/
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install package and pytest
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install ".[pytest]"
+      - name: Run tests
+        run: python -m pytest tests/
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install ruff
+      - run: ruff check .
+
+  package-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Build source and wheel distributions
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build
+      - name: Install wheel and smoke test pytest plugin
+        run: |
+          python -m venv wheel-smoke
+          source wheel-smoke/bin/activate
+          python -m pip install dist/*.whl pytest
+          python -c "import beautiful_report; print(beautiful_report.__version__)"
+          glow-report --help
+          printf 'def test_wheel_smoke():\n    assert True\n' > test_wheel_smoke.py
+          pytest -q test_wheel_smoke.py --report-dir smoke-report
+          python -c "import json; data=json.load(open('smoke-report/report.json')); assert data['summary']['passed'] == 1"
+
+  unittest-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install without pytest and exercise Glow unittest runner
+        run: |
+          python -m venv unittest-smoke
+          source unittest-smoke/bin/activate
+          python -m pip install .
+          if python -m pip show pytest; then echo "pytest should not be installed"; exit 1; fi
+          set +e
+          glow-report run -- unittest discover -s examples -p '*unittest.py'
+          status=$?
+          set -e
+          test "$status" -eq 1
+          python -c "import json; data=json.load(open('reports/report.json')); assert data['summary'] == {'passed': 1, 'failed': 1, 'skipped': 1, 'total': 3}"

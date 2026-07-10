@@ -27,15 +27,15 @@ classifiers = [
     "Topic :: Software Development :: Quality Assurance",
 ]
 keywords = ["pytest", "testing", "report", "html", "unittest", "automation"]
+dependencies = [
+    "jinja2>=3.0",
+    "typing-extensions>=4.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/godhiraj-code/pytest-glow-report"
 Repository = "https://github.com/godhiraj-code/pytest-glow-report.git"
 Issues = "https://github.com/godhiraj-code/pytest-glow-report/issues"
-dependencies = [
-    "jinja2>=3.0",
-    "typing-extensions>=4.0",
-]
 
 [project.optional-dependencies]
 pytest = ["pytest>=6.0"]
@@ -63,6 +63,9 @@ source = "vcs"
 
 [tool.hatch.build.hooks.vcs]
 version-file = "src/beautiful_report/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/beautiful_report"]
 
 [tool.ruff]
 line-length = 120

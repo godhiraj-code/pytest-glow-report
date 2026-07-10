@@ -1,11 +1,7 @@
-"""
-PyTest plugin for Glow Report.
-
-This module provides pytest hooks to automatically generate beautiful HTML reports.
-"""
+"""Pytest plugin for Glow Report."""
 import os
 import sys
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import pytest
 
@@ -15,14 +11,19 @@ _builder: Optional[ReportBuilder] = None
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
-    """Add command-line options for the report plugin."""
     group = parser.getgroup("glow-report")
     group.addoption(
         "--glow-report",
         action="store_true",
         default=True,
         dest="glow_report",
-        help="Enable Glow HTML Report generation (enabled by default)",
+        help="Enable Glow HTML report generation (enabled by default)",
+    )
+    group.addoption(
+        "--no-glow-report",
+        action="store_false",
+        dest="glow_report",
+        help="Disable Glow HTML report generation",
     )
     group.addoption(
         "--report-dir",
@@ -34,116 +35,128 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 def pytest_addhooks(pluginmanager: pytest.PytestPluginManager) -> None:
-    """Register custom hooks for report customization."""
     from . import hooks
+
     pluginmanager.add_hookspecs(hooks)
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Initialize the report builder at session start."""
     global _builder
-    
-    if not config.option.glow_report:
+    _builder = None
+    if not config.getoption("glow_report"):
         return
-    
-    report_dir = config.option.report_dir
-    _builder = ReportBuilder(output_dir=report_dir)
-    
-    title = os.environ.get("GLOW_REPORT_TITLE", "Glow Test Report")
-    _builder.context["title"] = title
+
+    _builder = ReportBuilder(output_dir=config.getoption("report_dir"))
+    _builder.context["title"] = os.environ.get("GLOW_REPORT_TITLE", "Glow Test Report")
+
+
+@pytest.hookimpl(hookwrapper=True, tryfirst=True)
+def pytest_runtest_protocol(item: pytest.Item, nextitem: Optional[pytest.Item]):
+    """Keep report context active across setup, call, and teardown."""
+    del nextitem
+    if _builder is None:
+        yield
+        return
+
+    from .decorators import TestContext, set_current_context
+
+    context = TestContext()
+    setattr(item, "_glow_report_context", context)
+    set_current_context(context)
+    try:
+        yield
+    finally:
+        set_current_context(None)
+
+
+@pytest.hookimpl(hookwrapper=True, trylast=True)
+def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
+    """Transfer execution context from the item to each serializable TestReport."""
+    del call
+    outcome = yield
+    test_report = outcome.get_result()
+    context = getattr(item, "_glow_report_context", None)
+    if context is not None:
+        setattr(test_report, "_glow_report_context", context.to_dict())
+
+
+def _make_result(report: pytest.TestReport) -> Dict[str, Any]:
+    context = getattr(report, "_glow_report_context", {}) or {}
+    return {
+        "nodeid": report.nodeid,
+        "outcome": report.outcome,
+        "duration": report.duration,
+        "longrepr": str(report.longrepr) if report.longrepr else None,
+        "sections": list(report.sections),
+        "steps": list(context.get("steps", [])),
+        "screenshots": list(context.get("screenshots", [])),
+        "logs": list(context.get("logs", [])),
+        "phase": report.when,
+    }
+
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    """Capture call results and setup/teardown failures without duplicate rows."""
+    if _builder is None:
+        return
+
+    # Every phase contributes duration, captured sections, and execution context.
+    # ReportBuilder merges them into one row and gives failures/skips precedence.
+    _builder.add_test_result(_make_result(report))
 
 
 @pytest.hookimpl(trylast=True)
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """Generate the report at session end."""
     global _builder
-    
     if _builder is None:
         return
-    
+
+    numeric_exitstatus = int(exitstatus)
+    _builder.context["session_exitstatus"] = numeric_exitstatus
+    if numeric_exitstatus != int(pytest.ExitCode.OK) and not any(
+        test.get("outcome") == "failed" for test in _builder.tests
+    ):
+        _builder.add_test_result(
+            {
+                "nodeid": "pytest session",
+                "outcome": "failed",
+                "duration": 0.0,
+                "longrepr": "pytest exited with status {} before recording a test failure".format(numeric_exitstatus),
+                "sections": [],
+                "steps": [],
+                "screenshots": [],
+                "logs": [],
+                "phase": "session",
+            }
+        )
+
     try:
         logo = session.config.hook.pytest_html_logo()
         if logo:
             _builder.context["logo"] = logo
     except Exception:
         pass
-    
-    base_env: Dict[str, str] = {
-        "Python": sys.version.split()[0],
-        "Platform": sys.platform,
-    }
-    
-    # Add optional enterprise fields from environment
-    if os.environ.get("GLOW_TEST_TYPE"):
-        base_env["Test Type"] = os.environ.get("GLOW_TEST_TYPE")
-    if os.environ.get("GLOW_BROWSER"):
-        base_env["Browser"] = os.environ.get("GLOW_BROWSER")
-    if os.environ.get("GLOW_DEVICE"):
-        base_env["Device"] = os.environ.get("GLOW_DEVICE")
-    if os.environ.get("GLOW_ENVIRONMENT"):
-        base_env["Environment"] = os.environ.get("GLOW_ENVIRONMENT")
-    if os.environ.get("GLOW_BUILD"):
-        base_env["Build"] = os.environ.get("GLOW_BUILD")
-    
+
+    base_env: Dict[str, str] = {"Python": sys.version.split()[0], "Platform": sys.platform}
+    environment_fields = (
+        ("GLOW_TEST_TYPE", "Test Type"),
+        ("GLOW_BROWSER", "Browser"),
+        ("GLOW_DEVICE", "Device"),
+        ("GLOW_ENVIRONMENT", "Environment"),
+        ("GLOW_BUILD", "Build"),
+    )
+    for variable, label in environment_fields:
+        value = os.environ.get(variable)
+        if value:
+            base_env[label] = value
+
     try:
         custom_env = session.config.hook.pytest_html_environment()
         if custom_env:
             base_env.update(custom_env)
     except Exception:
         pass
-    
+
     _builder.set_environment_info(base_env)
     _builder.build_report()
     _builder = None
-
-
-@pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo) -> None:
-    """Manage test context for steps and screenshots."""
-    from .decorators import TestContext, set_current_context
-
-    if call.when == "call":
-        ctx = TestContext()
-        set_current_context(ctx)
-        item._glow_report_context = ctx
-    
-    outcome = yield
-    
-    if call.when == "call":
-        set_current_context(None)
-    
-    _ = outcome.get_result()
-
-
-def pytest_runtest_logreport(report: pytest.TestReport) -> None:
-    """Capture individual test results with steps and screenshots."""
-    global _builder
-    
-    if _builder is None:
-        return
-    
-    if report.when == "call":
-        ctx = getattr(report, "_glow_report_context", None)
-        
-        result = {
-            "nodeid": report.nodeid,
-            "outcome": report.outcome,
-            "duration": report.duration,
-            "longrepr": str(report.longrepr) if report.longrepr else None,
-            "sections": list(report.sections),
-            "steps": ctx.steps if ctx else [],
-            "screenshots": ctx.screenshots if ctx else [],
-        }
-        _builder.add_test_result(result)
-    
-    elif report.when == "setup" and report.outcome == "skipped":
-        result = {
-            "nodeid": report.nodeid,
-            "outcome": "skipped",
-            "duration": 0.0,
-            "longrepr": str(report.longrepr) if report.longrepr else None,
-            "sections": list(report.sections),
-            "steps": [],
-            "screenshots": [],
-        }
-        _builder.add_test_result(result)

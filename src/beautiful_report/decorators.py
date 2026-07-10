@@ -12,14 +12,17 @@ Usage:
     report.log("Custom message")
 """
 import base64
+import contextvars
 import functools
 import os
 import time
 from datetime import datetime
 from typing import Callable, List, Dict, Any, Optional
 
-# Thread-local storage for current test context
-_current_test_context: Optional["TestContext"] = None
+# Context-local storage keeps concurrent or nested test execution isolated.
+_current_test_context: contextvars.ContextVar[Optional["TestContext"]] = contextvars.ContextVar(
+    "glow_test_context", default=None
+)
 
 
 class TestContext:
@@ -58,14 +61,12 @@ class TestContext:
 
 def get_current_context() -> Optional[TestContext]:
     """Get the current test context (if any)."""
-    global _current_test_context
-    return _current_test_context
+    return _current_test_context.get()
 
 
 def set_current_context(ctx: Optional[TestContext]):
     """Set the current test context."""
-    global _current_test_context
-    _current_test_context = ctx
+    _current_test_context.set(ctx)
 
 
 class report:
@@ -90,7 +91,7 @@ class report:
                 start = time.time()
                 
                 # Log step start
-                print(f"📋 STEP: {title}")
+                print(f"STEP: {title}")
                 
                 try:
                     result = func(*args, **kwargs)
@@ -99,7 +100,7 @@ class report:
                     if ctx:
                         ctx.add_step(title, "passed", duration)
                     
-                    print(f"   ✓ PASSED ({duration:.4f}s)")
+                    print(f"   PASSED ({duration:.4f}s)")
                     return result
                     
                 except Exception as e:
@@ -108,7 +109,7 @@ class report:
                     if ctx:
                         ctx.add_step(title, "failed", duration)
                     
-                    print(f"   ✗ FAILED ({duration:.4f}s): {str(e)}")
+                    print(f"   FAILED ({duration:.4f}s): {str(e)}")
                     raise
                     
             return wrapper
@@ -144,7 +145,7 @@ class report:
             
             if ctx:
                 ctx.add_screenshot(data_uri)
-            print(f"📸 Screenshot added: {name}")
+            print(f"Screenshot added: {name}")
             return data_uri
             
         elif driver:
@@ -157,7 +158,7 @@ class report:
                     # Try Playwright-style
                     screenshot_bytes = driver.screenshot()
                 except Exception:
-                    print(f"⚠️ Could not capture screenshot from driver")
+                    print("Could not capture screenshot from driver")
                     return None
             
             b64 = base64.b64encode(screenshot_bytes).decode("utf-8")
@@ -165,11 +166,11 @@ class report:
             
             if ctx:
                 ctx.add_screenshot(data_uri)
-            print(f"📸 Screenshot captured: {name}")
+            print(f"Screenshot captured: {name}")
             return data_uri
         
         else:
-            print(f"⚠️ Screenshot '{name}': No path or driver provided")
+            print(f"Screenshot '{name}': No path or driver provided")
             return None
     
     @staticmethod
@@ -183,7 +184,7 @@ class report:
         ctx = get_current_context()
         if ctx:
             ctx.add_log(message)
-        print(f"📝 LOG: {message}")
+        print(f"LOG: {message}")
     
     @staticmethod
     def attach(name: str, content: str, content_type: str = "text/plain"):
@@ -201,4 +202,4 @@ class report:
         ctx = get_current_context()
         if ctx:
             ctx.logs.append(f"[ATTACHMENT: {name}] {content[:100]}{'...' if len(content) > 100 else ''}")
-        print(f"📎 Attached: {name} ({content_type})")
+        print(f"Attached: {name} ({content_type})")
