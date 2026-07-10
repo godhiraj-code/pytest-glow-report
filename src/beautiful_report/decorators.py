@@ -12,14 +12,17 @@ Usage:
     report.log("Custom message")
 """
 import base64
+import contextvars
 import functools
 import os
 import time
 from datetime import datetime
 from typing import Callable, List, Dict, Any, Optional
 
-# Thread-local storage for current test context
-_current_test_context: Optional["TestContext"] = None
+# Context-local storage keeps concurrent or nested test execution isolated.
+_current_test_context: contextvars.ContextVar[Optional["TestContext"]] = contextvars.ContextVar(
+    "glow_test_context", default=None
+)
 
 
 class TestContext:
@@ -58,14 +61,12 @@ class TestContext:
 
 def get_current_context() -> Optional[TestContext]:
     """Get the current test context (if any)."""
-    global _current_test_context
-    return _current_test_context
+    return _current_test_context.get()
 
 
 def set_current_context(ctx: Optional[TestContext]):
     """Set the current test context."""
-    global _current_test_context
-    _current_test_context = ctx
+    _current_test_context.set(ctx)
 
 
 class report:
@@ -157,7 +158,7 @@ class report:
                     # Try Playwright-style
                     screenshot_bytes = driver.screenshot()
                 except Exception:
-                    print(f"⚠️ Could not capture screenshot from driver")
+                    print("⚠️ Could not capture screenshot from driver")
                     return None
             
             b64 = base64.b64encode(screenshot_bytes).decode("utf-8")

@@ -10,6 +10,7 @@ import unittest
 from typing import Any, Optional, Tuple
 
 from .core import ReportBuilder
+from .decorators import TestContext, set_current_context
 
 
 class BeautifulTestResult(unittest.TextTestResult):
@@ -19,14 +20,25 @@ class BeautifulTestResult(unittest.TextTestResult):
         super().__init__(stream, descriptions, verbosity)
         self.builder = builder
         self._start_time: Optional[float] = None
+        self._context: Optional[TestContext] = None
+        self._subtest_results = 0
 
     def startTest(self, test: unittest.TestCase) -> None:
         super().startTest(test)
         self._start_time = time.time()
+        self._context = TestContext()
+        self._subtest_results = 0
+        set_current_context(self._context)
+
+    def stopTest(self, test: unittest.TestCase) -> None:
+        set_current_context(None)
+        self._context = None
+        super().stopTest(test)
 
     def addSuccess(self, test: unittest.TestCase) -> None:
         super().addSuccess(test)
-        self._add_result(test, "passed")
+        if self._subtest_results == 0:
+            self._add_result(test, "passed")
 
     def addFailure(self, test: unittest.TestCase, err: Tuple[Any, ...]) -> None:
         super().addFailure(test, err)
@@ -39,6 +51,29 @@ class BeautifulTestResult(unittest.TextTestResult):
     def addSkip(self, test: unittest.TestCase, reason: str) -> None:
         super().addSkip(test, reason)
         self._add_result(test, "skipped", reason=reason)
+
+    def addSubTest(
+        self,
+        test: unittest.TestCase,
+        subtest: unittest.TestCase,
+        err: Optional[Tuple[Any, ...]],
+    ) -> None:
+        super().addSubTest(test, subtest, err)
+        self._subtest_results += 1
+        if err is None:
+            self._add_result(subtest, "passed")
+        elif err and err[0] is unittest.SkipTest:
+            self._add_result(subtest, "skipped", reason=str(err[1]))
+        else:
+            self._add_result(subtest, "failed", err)
+
+    def addExpectedFailure(self, test: unittest.TestCase, err: Tuple[Any, ...]) -> None:
+        super().addExpectedFailure(test, err)
+        self._add_result(test, "skipped", reason=f"Expected failure: {err[1]}")
+
+    def addUnexpectedSuccess(self, test: unittest.TestCase) -> None:
+        super().addUnexpectedSuccess(test)
+        self._add_result(test, "failed", reason="Unexpected success")
 
     def _add_result(
         self, 
@@ -67,7 +102,10 @@ class BeautifulTestResult(unittest.TextTestResult):
             "sections": [],
             "steps": [],
             "screenshots": [],
+            "logs": [],
         }
+        if self._context is not None:
+            result.update(self._context.to_dict())
         self.builder.add_test_result(result)
 
 
