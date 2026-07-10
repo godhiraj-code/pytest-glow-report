@@ -73,7 +73,7 @@ jobs:
           python -m pip install .
           if python -m pip show pytest; then echo "pytest should not be installed"; exit 1; fi
           set +e
-          glow-report run -- unittest discover -s examples
+          glow-report run -- unittest discover -s examples -p '*unittest.py'
           status=$?
           set -e
           test "$status" -eq 1

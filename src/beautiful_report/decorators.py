@@ -91,7 +91,7 @@ class report:
                 start = time.time()
                 
                 # Log step start
-                print(f"📋 STEP: {title}")
+                print(f"STEP: {title}")
                 
                 try:
                     result = func(*args, **kwargs)
@@ -100,7 +100,7 @@ class report:
                     if ctx:
                         ctx.add_step(title, "passed", duration)
                     
-                    print(f"   ✓ PASSED ({duration:.4f}s)")
+                    print(f"   PASSED ({duration:.4f}s)")
                     return result
                     
                 except Exception as e:
@@ -109,7 +109,7 @@ class report:
                     if ctx:
                         ctx.add_step(title, "failed", duration)
                     
-                    print(f"   ✗ FAILED ({duration:.4f}s): {str(e)}")
+                    print(f"   FAILED ({duration:.4f}s): {str(e)}")
                     raise
                     
             return wrapper
@@ -145,7 +145,7 @@ class report:
             
             if ctx:
                 ctx.add_screenshot(data_uri)
-            print(f"📸 Screenshot added: {name}")
+            print(f"Screenshot added: {name}")
             return data_uri
             
         elif driver:
@@ -158,7 +158,7 @@ class report:
                     # Try Playwright-style
                     screenshot_bytes = driver.screenshot()
                 except Exception:
-                    print("⚠️ Could not capture screenshot from driver")
+                    print("Could not capture screenshot from driver")
                     return None
             
             b64 = base64.b64encode(screenshot_bytes).decode("utf-8")
@@ -166,11 +166,11 @@ class report:
             
             if ctx:
                 ctx.add_screenshot(data_uri)
-            print(f"📸 Screenshot captured: {name}")
+            print(f"Screenshot captured: {name}")
             return data_uri
         
         else:
-            print(f"⚠️ Screenshot '{name}': No path or driver provided")
+            print(f"Screenshot '{name}': No path or driver provided")
             return None
     
     @staticmethod
@@ -184,7 +184,7 @@ class report:
         ctx = get_current_context()
         if ctx:
             ctx.add_log(message)
-        print(f"📝 LOG: {message}")
+        print(f"LOG: {message}")
     
     @staticmethod
     def attach(name: str, content: str, content_type: str = "text/plain"):
@@ -202,4 +202,4 @@ class report:
         ctx = get_current_context()
         if ctx:
             ctx.logs.append(f"[ATTACHMENT: {name}] {content[:100]}{'...' if len(content) > 100 else ''}")
-        print(f"📎 Attached: {name} ({content_type})")
+        print(f"Attached: {name} ({content_type})")
