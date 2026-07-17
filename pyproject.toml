@@ -26,15 +26,16 @@ classifiers = [
     "Topic :: Software Development :: Testing",
     "Topic :: Software Development :: Quality Assurance",
 ]
-keywords = ["pytest", "testing", "report", "html", "unittest", "automation"]
+keywords = ["pytest", "html-report", "test-reporting", "selenium", "playwright", "qa-automation", "python"]
 dependencies = [
     "jinja2>=3.0",
     "typing-extensions>=4.0",
 ]
 
 [project.urls]
-Homepage = "https://github.com/godhiraj-code/pytest-glow-report"
-Repository = "https://github.com/godhiraj-code/pytest-glow-report.git"
+Homepage = "https://www.dhirajdas.dev/project/pytest-glow-report"
+Documentation = "https://www.dhirajdas.dev/project/pytest-glow-report"
+Repository = "https://github.com/godhiraj-code/pytest-glow-report"
 Issues = "https://github.com/godhiraj-code/pytest-glow-report/issues"
 
 [project.optional-dependencies]

@@ -10,6 +10,8 @@
 
 *Stunning visuals • Zero configuration • Infinite customization*
 
+[See the report proof and architecture case study](https://www.dhirajdas.dev/project/pytest-glow-report) · [Install from PyPI](https://pypi.org/project/pytest-glow-report/)
+
 [Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Configuration](#%EF%B8%8F-configuration) • [Customization](#-customization)
 
 </div>
@@ -294,6 +296,8 @@ report.log("User created successfully")
 ## 🤝 Contributing
 
 Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+If this report saves your team from translating terminal output into status spreadsheets, [star the repository](https://github.com/godhiraj-code/pytest-glow-report). The [full case study](https://www.dhirajdas.dev/project/pytest-glow-report) covers the architecture, trade-offs, and implementation.
 
 ---
 
