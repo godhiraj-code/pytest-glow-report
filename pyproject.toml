@@ -35,6 +35,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://www.dhirajdas.dev/project/pytest-glow-report"
 Documentation = "https://www.dhirajdas.dev/project/pytest-glow-report"
+Tutorial = "https://www.dhirajdas.dev/blog/pytest-glow-report-beautiful-test-reports"
 Repository = "https://github.com/godhiraj-code/pytest-glow-report"
 Issues = "https://github.com/godhiraj-code/pytest-glow-report/issues"
 

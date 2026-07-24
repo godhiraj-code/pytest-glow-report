@@ -10,7 +10,7 @@
 
 *Stunning visuals • Zero configuration • Infinite customization*
 
-[See the report proof and architecture case study](https://www.dhirajdas.dev/project/pytest-glow-report) · [Install from PyPI](https://pypi.org/project/pytest-glow-report/)
+[See the report proof and architecture case study](https://www.dhirajdas.dev/project/pytest-glow-report) · [Read the tutorial](https://www.dhirajdas.dev/blog/pytest-glow-report-beautiful-test-reports) · [Install from PyPI](https://pypi.org/project/pytest-glow-report/)
 
 [Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Configuration](#%EF%B8%8F-configuration) • [Customization](#-customization)
 
