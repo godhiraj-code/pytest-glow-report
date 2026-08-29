@@ -7,6 +7,7 @@ serving reports locally, and converting JUnit XML.
 import argparse
 import subprocess
 import sys
+from typing import List
 
 
 def main() -> None:
@@ -43,7 +44,7 @@ def main() -> None:
         parser.print_help()
 
 
-def _run_unittest(cmd_args: list) -> None:
+def _run_unittest(cmd_args: List[str]) -> None:
     """Run unittest with BeautifulTestRunner."""
     cmd = list(cmd_args)
     

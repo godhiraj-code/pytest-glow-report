@@ -1,152 +1,132 @@
-# pytest-glow-report ✨
+# pytest-glow-report
 
 <div align="center">
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python&logoColor=white)
-![PyTest](https://img.shields.io/badge/PyTest-6.0+-green?logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-6.0+-green?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-purple)
 
-**Beautiful, glowing HTML test reports for PyTest and unittest**
+**HTML and JSON test reports for pytest and unittest**
 
-*Stunning visuals • Zero configuration • Infinite customization*
-
-[Features](#-features) • [Installation](#-installation) • [Quick Start](#-quick-start) • [Configuration](#%EF%B8%8F-configuration) • [Customization](#-customization)
+[Features](#features) • [Installation](#installation) • [pytest](#pytest) • [unittest](#unittest) • [Configuration](#configuration) • [Test-context API](#test-context-api)
 
 </div>
 
----
+## Features
 
-## ✨ Features
+- Automatic report generation when the installed pytest plugin is enabled
+- One result per pytest test, including setup, call, and teardown failures
+- A `glow-report` wrapper for Python's built-in unittest runner
+- HTML and JSON output, plus SQLite-backed history for the last 10 runs in the same report directory
+- Result search and pass/fail/skip filters in the enhanced HTML view
+- Custom report title, environment metadata, and logo hooks for pytest
+- Test steps, logs, and embedded PNG/JPEG screenshots
+- Dark and light themes
 
-| Feature | Description |
-|---------|-------------|
-| 🚀 **Zero Config** | Just install and run — reports generate automatically |
-| 🎨 **Stunning Design** | Glassmorphism UI, animated backgrounds, dark/light mode |
-| 📊 **History Tracking** | SQLite-backed test run history with trend charts |
-| 🔍 **Interactive Filtering** | Click summary cards to filter Pass/Fail/Skip |
-|  **Screenshot Support** | Embed screenshots from Selenium, Playwright, or files |
-| 📋 **Step Tracking** | Log individual test steps with timing |
-| 🎯 **Fully Customizable** | Custom logo, title, environment info, and hooks |
+The HTML includes readable fallback styling for offline use. Tailwind CSS and Alpine.js are loaded from public CDNs for the full styling and interactive experience, so those enhancements require network access when the report is opened.
 
----
+## Installation
 
-## 📦 Installation
+Install the package:
 
 ```bash
 pip install pytest-glow-report
 ```
 
----
+pytest itself is an optional dependency. To install it with the plugin:
 
-## 🚀 Quick Start
+```bash
+pip install "pytest-glow-report[pytest]"
+```
 
-### PyTest (Automatic)
+Python 3.8 or newer and pytest 6.0 or newer are supported.
 
-Simply run your tests — reports generate automatically:
+## pytest
+
+The plugin is registered through pytest's `pytest11` entry point and is enabled by default after installation. Run pytest normally:
 
 ```bash
 pytest
 ```
 
-Report saved to: `reports/report.html`
+This writes:
 
-### Unittest
-
-Use the CLI wrapper:
-
-```bash
-glow-report run -- unittest discover tests
+```text
+reports/
+├── report.html
+├── report.json
+└── history.sqlite
 ```
 
----
+Use another output directory or disable generation for a run:
 
-## ⚙️ Configuration
+```bash
+pytest --report-dir=my_reports
+pytest --no-glow-report
+```
 
-### Environment Variables
+`--report-dir` and `--no-glow-report` are pytest options; they do not configure the unittest wrapper.
 
-Configure the report using environment variables:
+## unittest
+
+Run unittest discovery through the installed CLI:
+
+```bash
+glow-report run -- unittest discover -s tests
+```
+
+The wrapper uses `BeautifulTestRunner`, preserves unittest's process exit status, and writes to `reports/`. It records passes, failures, errors, skips, subtests, expected failures, and unexpected successes. Expected failures are represented as skipped results; unexpected successes are represented as failures.
+
+## Configuration
+
+### Environment variables
+
+The pytest integration reads these variables:
 
 | Variable | Description | Default | Example |
 |----------|-------------|---------|---------|
-| `GLOW_REPORT_TITLE` | Title shown in the report header | `Glow Test Report` | `My Project CI` |
-| `GLOW_TEST_TYPE` | Type of test run | — | `Regression`, `Smoke`, `Sanity` |
-| `GLOW_BROWSER` | Browser under test | — | `Chrome 120`, `Firefox 121` |
-| `GLOW_DEVICE` | Device/platform under test | — | `iPhone 15`, `Pixel 8`, `Web` |
-| `GLOW_ENVIRONMENT` | Target environment | — | `Production`, `Staging`, `QA` |
-| `GLOW_BUILD` | Build/version number | — | `v2.1.0`, `#12345` |
+| `GLOW_REPORT_TITLE` | Report header title | `Glow Test Report` | `My Project CI` |
+| `GLOW_TEST_TYPE` | Test-run label | — | `Regression` |
+| `GLOW_BROWSER` | Browser label | — | `Chrome 120` |
+| `GLOW_DEVICE` | Device or platform label | — | `iPhone 15` |
+| `GLOW_ENVIRONMENT` | Target-environment label | — | `Staging` |
+| `GLOW_BUILD` | Build or version label | — | `v2.1.0` |
 
-**Usage Examples:**
+POSIX shell example:
 
 ```bash
-# Regression test on Chrome
 export GLOW_REPORT_TITLE="E-Commerce Regression"
 export GLOW_TEST_TYPE="Regression"
 export GLOW_BROWSER="Chrome 120"
 export GLOW_ENVIRONMENT="Staging"
 pytest
+```
 
-# Mobile smoke test
-export GLOW_TEST_TYPE="Smoke"
-export GLOW_DEVICE="iPhone 15 Pro"
-export GLOW_ENVIRONMENT="Production"
-pytest tests/mobile/
+PowerShell example:
 
-# Windows PowerShell
-$env:GLOW_TEST_TYPE="Smoke"
-$env:GLOW_BROWSER="Edge 120"
-$env:GLOW_DEVICE="Windows 11"
+```powershell
+$env:GLOW_TEST_TYPE = "Smoke"
+$env:GLOW_BROWSER = "Edge 120"
+$env:GLOW_DEVICE = "Windows 11"
 pytest
 ```
 
-### Command-Line Options
+### pytest customization hooks
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--report-dir` | Directory to save reports | `reports` |
-| `--glow-report` / `--no-glow-report` | Enable/disable report generation | Enabled |
-
-**Usage:**
-
-```bash
-# Custom output directory
-pytest --report-dir=my_reports/
-
-# Disable report generation
-pytest --no-glow-report
-```
-
----
-
-## 🎨 Customization
-
-### Custom Logo
-
-Add a logo to your report by implementing the `pytest_html_logo` hook in your `conftest.py`:
+Add a logo URL or image data URI in `conftest.py`:
 
 ```python
-# conftest.py
-
 def pytest_html_logo():
-    """Return a URL or base64-encoded image for the report logo."""
-    # Option 1: URL
-    return "https://your-company.com/logo.png"
-    
-    # Option 2: Base64 (for offline reports)
-    # import base64
-    # with open("logo.png", "rb") as f:
-    #     return f"data:image/png;base64,{base64.b64encode(f.read()).decode()}"
+    return "https://example.com/logo.png"
 ```
 
-### Custom Environment Info
-
-Add custom metadata to the Environment section:
+Add environment metadata:
 
 ```python
-# conftest.py
 import os
 
+
 def pytest_html_environment():
-    """Add custom key-value pairs to the Environment section."""
     return {
         "Browser": "Chrome 120",
         "Environment": os.environ.get("ENV", "local"),
@@ -155,154 +135,78 @@ def pytest_html_environment():
     }
 ```
 
-**Result:** The Environment panel in your report will show:
+The report always includes the Python version and platform. Hook values are merged into the Environment section.
 
-| Key | Value |
-|-----|-------|
-| Python | 3.11.5 |
-| Platform | linux |
-| Browser | Chrome 120 |
-| Environment | staging |
-| Build | 12345 |
-| Branch | main |
+## Test-context API
 
----
+The context API records data only while a test is running under the pytest plugin or `BeautifulTestRunner`. Calls made outside an active test still print their console message but are not attached to a report result.
 
-## 📸 Screenshots
+### Steps
 
-Capture and embed screenshots in your tests:
+Use `report.step(title)` with synchronous or asynchronous functions. The report records the step name, duration, and passed/failed status, then re-raises any exception.
 
 ```python
 from beautiful_report import report
 
-def test_login_page(driver):
-    driver.get("https://example.com/login")
-    
-    # Option 1: Capture from Selenium/Playwright driver
-    report.screenshot("login_page", driver=driver)
-    
-    # Option 2: Use an existing file
-    report.screenshot("saved_screenshot", path="screenshots/login.png")
-    
-    # Screenshots appear as thumbnails in the expanded test view
-```
-
----
-
-## 📋 Step Tracking
-
-Log individual steps within your tests:
-
-```python
-from beautiful_report import report
 
 @report.step("Opening login page")
 def open_login(driver):
     driver.get("/login")
 
-@report.step("Entering credentials")
-def enter_credentials(driver, user, password):
-    driver.find_element("id", "username").send_keys(user)
-    driver.find_element("id", "password").send_keys(password)
 
-@report.step("Clicking submit button")
-def submit(driver):
-    driver.find_element("css selector", "button[type='submit']").click()
-
-def test_login_flow(driver):
-    open_login(driver)
-    enter_credentials(driver, "admin", "secret123")
-    submit(driver)
-    assert "Dashboard" in driver.title
+@report.step("Loading account")
+async def load_account(client):
+    return await client.get("/account")
 ```
 
-**Result:** The report shows numbered steps with:
-- Step name
-- Duration
-- Pass/fail status
-
----
-
-## 🎯 Interactive Features
-
-### Clickable Summary Cards
-
-Click any summary card to filter results:
-
-- **Total Tests** (teal gradient) → Shows all tests
-- **Passed** (green) → Shows only passed tests
-- **Failed** (red, pulsing) → Shows only failed tests
-- **Skipped** (amber) → Shows only skipped tests
-
-### Dark Mode
-
-Toggle with the sun/moon button in the header. Your preference is saved in local storage.
-
-### Expandable Test Details
-
-Click any test to expand and see:
-- Error tracebacks (with copy button)
-- Captured stdout/stderr
-- Test steps with timing
-- Embedded screenshots
-
----
-
-## 📁 Output Structure
-
-```
-reports/
-├── report.html      # Interactive HTML report
-├── report.json      # Machine-readable JSON results
-└── history.sqlite   # Test run history database
-```
-
----
-
-## 🔧 API Reference
-
-### `report.step(title)`
-
-Decorator to mark a function as a test step.
+### Logs
 
 ```python
-@report.step("Doing something important")
-def my_function():
-    pass
-```
+from beautiful_report import report
 
-### `report.screenshot(name, driver=None, path=None)`
-
-Capture or attach a screenshot.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `name` | str | Name for the screenshot |
-| `driver` | WebDriver | Selenium/Playwright driver (optional) |
-| `path` | str | Path to existing image file (optional) |
-
-### `report.log(message)`
-
-Add a custom log message.
-
-```python
 report.log("User created successfully")
 ```
 
----
+### Screenshots
 
-## 🤝 Contributing
+Attach an existing PNG or JPEG file:
 
-Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+```python
+from beautiful_report import report
 
----
+report.screenshot("login page", path="screenshots/login.png")
+```
 
-## 📄 License
+Or capture from a synchronous Selenium- or Playwright-style object:
 
-MIT License - see [LICENSE](LICENSE) for details.
+```python
+report.screenshot("after submit", driver=driver)
+```
 
----
+The driver must provide either `get_screenshot_as_png()` or a synchronous `screenshot()` method that returns bytes. Screenshots are embedded as data URIs in both `report.html` and `report.json`; large screenshots therefore increase both artifact sizes.
 
-<div align="center">
-<p>Made with ❤️ for the testing community</p>
-</div>
+## Output and history behavior
+
+- `report.html` is the human-readable report.
+- `report.json` contains the same summary, test results, environment metadata, history snapshot, and pytest session exit status when applicable.
+- `history.sqlite` stores aggregate run counts and duration. The HTML and JSON outputs show up to the 10 most recent rows from that database.
+- Reusing a report directory updates its history. Deleting or changing the directory starts a new history database.
+- Each run replaces `report.html` and `report.json` in the selected directory.
+
+Generated reports can contain test names, tracebacks, captured output, custom logs, metadata, and screenshots. Treat them as potentially sensitive CI artifacts and review them before sharing.
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+pytest tests/
+ruff check .
+mypy src/
+python -m build
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
