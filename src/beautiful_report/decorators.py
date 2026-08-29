@@ -14,6 +14,7 @@ Usage:
 import base64
 import contextvars
 import functools
+import inspect
 import os
 import time
 from datetime import datetime
@@ -28,13 +29,13 @@ _current_test_context: contextvars.ContextVar[Optional["TestContext"]] = context
 class TestContext:
     """Context manager for tracking steps and screenshots within a test."""
     
-    def __init__(self):
+    def __init__(self) -> None:
         self.steps: List[Dict[str, Any]] = []
         self.screenshots: List[str] = []
         self.logs: List[str] = []
         self._step_counter = 0
     
-    def add_step(self, name: str, status: str, duration: float):
+    def add_step(self, name: str, status: str, duration: float) -> None:
         self._step_counter += 1
         self.steps.append({
             "number": self._step_counter,
@@ -44,11 +45,11 @@ class TestContext:
             "timestamp": datetime.now().isoformat()
         })
     
-    def add_screenshot(self, path_or_base64: str):
+    def add_screenshot(self, path_or_base64: str) -> None:
         """Add a screenshot (file path or base64 string)."""
         self.screenshots.append(path_or_base64)
     
-    def add_log(self, message: str):
+    def add_log(self, message: str) -> None:
         self.logs.append(f"[{datetime.now().strftime('%H:%M:%S')}] {message}")
     
     def to_dict(self) -> Dict[str, Any]:
@@ -64,7 +65,7 @@ def get_current_context() -> Optional[TestContext]:
     return _current_test_context.get()
 
 
-def set_current_context(ctx: Optional[TestContext]):
+def set_current_context(ctx: Optional[TestContext]) -> None:
     """Set the current test context."""
     _current_test_context.set(ctx)
 
@@ -73,7 +74,7 @@ class report:
     """Static class providing decorators and methods for report customization."""
     
     @staticmethod
-    def step(title: str):
+    def step(title: str) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
         """
         Decorator to mark a function as a test step.
         
@@ -84,9 +85,32 @@ class report:
             def upload_file():
                 ...
         """
-        def decorator(func: Callable):
+        def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+            if inspect.iscoroutinefunction(func):
+                @functools.wraps(func)
+                async def async_wrapper(*args: Any, **kwargs: Any) -> Any:
+                    ctx = get_current_context()
+                    start = time.time()
+                    print(f"STEP: {title}")
+
+                    try:
+                        result = await func(*args, **kwargs)
+                        duration = time.time() - start
+                        if ctx:
+                            ctx.add_step(title, "passed", duration)
+                        print(f"   PASSED ({duration:.4f}s)")
+                        return result
+                    except Exception as e:
+                        duration = time.time() - start
+                        if ctx:
+                            ctx.add_step(title, "failed", duration)
+                        print(f"   FAILED ({duration:.4f}s): {str(e)}")
+                        raise
+
+                return async_wrapper
+
             @functools.wraps(func)
-            def wrapper(*args, **kwargs):
+            def wrapper(*args: Any, **kwargs: Any) -> Any:
                 ctx = get_current_context()
                 start = time.time()
                 
@@ -116,7 +140,7 @@ class report:
         return decorator
     
     @staticmethod
-    def screenshot(name: str = "screenshot", driver=None, path: str = None):
+    def screenshot(name: str = "screenshot", driver: Any = None, path: Optional[str] = None) -> Optional[str]:
         """
         Capture and add a screenshot to the current test.
         
@@ -174,7 +198,7 @@ class report:
             return None
     
     @staticmethod
-    def log(message: str):
+    def log(message: str) -> None:
         """
         Add a custom log message to the current test.
         
@@ -187,7 +211,7 @@ class report:
         print(f"LOG: {message}")
     
     @staticmethod
-    def attach(name: str, content: str, content_type: str = "text/plain"):
+    def attach(name: str, content: str, content_type: str = "text/plain") -> None:
         """
         Attach arbitrary content to the current test.
         

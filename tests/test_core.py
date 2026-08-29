@@ -1,8 +1,13 @@
+import asyncio
 import json
 import os
 from pathlib import Path
 
+import pytest
+
 from beautiful_report.core import ReportBuilder
+from beautiful_report.decorators import TestContext as _TestContext
+from beautiful_report.decorators import report, set_current_context
 
 
 def _result(**overrides):
@@ -93,3 +98,22 @@ def test_history_manager_supports_filename_without_directory(tmp_path, monkeypat
 
     HistoryManager("history.sqlite")
     assert Path("history.sqlite").exists()
+
+
+def test_async_step_records_failure_after_await():
+    context = _TestContext()
+    set_current_context(context)
+
+    @report.step("async action")
+    async def action():
+        raise RuntimeError("async boom")
+
+    try:
+        with pytest.raises(RuntimeError, match="async boom"):
+            asyncio.run(action())
+    finally:
+        set_current_context(None)
+
+    assert len(context.steps) == 1
+    assert context.steps[0]["name"] == "async action"
+    assert context.steps[0]["status"] == "failed"

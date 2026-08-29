@@ -1,7 +1,7 @@
 """Pytest plugin for Glow Report."""
 import os
 import sys
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Generator, Optional
 
 import pytest
 
@@ -51,7 +51,9 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 @pytest.hookimpl(hookwrapper=True, tryfirst=True)
-def pytest_runtest_protocol(item: pytest.Item, nextitem: Optional[pytest.Item]):
+def pytest_runtest_protocol(
+    item: pytest.Item, nextitem: Optional[pytest.Item]
+) -> Generator[None, None, None]:
     """Keep report context active across setup, call, and teardown."""
     del nextitem
     if _builder is None:
@@ -70,7 +72,9 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: Optional[pytest.Item]):
 
 
 @pytest.hookimpl(hookwrapper=True, trylast=True)
-def pytest_runtest_makereport(item: pytest.Item, call: pytest.CallInfo):
+def pytest_runtest_makereport(
+    item: pytest.Item, call: pytest.CallInfo[Any]
+) -> Generator[None, Any, None]:
     """Transfer execution context from the item to each serializable TestReport."""
     del call
     outcome = yield

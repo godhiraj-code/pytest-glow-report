@@ -7,7 +7,7 @@ HTML reports when running tests with Python's unittest framework.
 import sys
 import time
 import unittest
-from typing import Any, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple, Union
 
 from .core import ReportBuilder
 from .decorators import TestContext, set_current_context
@@ -94,7 +94,7 @@ class BeautifulTestResult(unittest.TextTestResult):
         if reason:
             longrepr = reason
 
-        result = {
+        result: Dict[str, Any] = {
             "nodeid": str(test),
             "outcome": outcome,
             "duration": duration,
@@ -123,7 +123,9 @@ class BeautifulTestRunner(unittest.TextTestRunner):
     def _makeResult(self) -> BeautifulTestResult:
         return BeautifulTestResult(self.stream, self.descriptions, self.verbosity, self.builder)
     
-    def run(self, test: unittest.TestSuite) -> unittest.TestResult:
+    def run(
+        self, test: Union[unittest.TestSuite, unittest.TestCase]
+    ) -> unittest.TextTestResult:
         result = super().run(test)
         self.builder.build_report()
         return result
