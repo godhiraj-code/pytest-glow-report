@@ -37,6 +37,20 @@ jobs:
       - run: python -m pip install ruff
       - run: ruff check .
 
+  browser-regressions:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install package and browser test dependencies
+        run: python -m pip install ".[pytest]" playwright
+      - name: Install Chromium
+        run: python -m playwright install --with-deps chromium
+      - name: Verify rendered copy and captured-log behavior
+        run: python -m pytest -q tests/test_report_browser.py
+
   package-smoke:
     runs-on: ubuntu-latest
     steps:
