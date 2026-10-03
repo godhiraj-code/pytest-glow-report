@@ -26,7 +26,7 @@ def _result(**overrides):
     return result
 
 
-@pytest.mark.parametrize("url", ["javascript:alert(1)", "java\nscript:alert(1)", "data:text/html,<script>alert(1)</script>", "data:image/svg+xml,<svg onload=alert(1)>"])
+@pytest.mark.parametrize("url", ["javascript:alert(1)", "java\nscript:alert(1)", "java\rscript:alert(1)", "java\tscript:alert(1)", "data:text/html,<script>alert(1)</script>", "data:image/svg+xml,<svg onload=alert(1)>"])
 def test_image_sources_reject_executable_schemes(url):
     assert _safe_image_url(url) == ""
 

@@ -28,6 +28,10 @@ def _clean_text(value: str) -> str:
 def _safe_image_url(value: str) -> str:
     """Allow image sources without allowing executable screenshot links."""
     value = _clean_text(str(value)).strip()
+    # Browsers strip these characters inside URL schemes, but older Python
+    # urlsplit versions do not. Reject them before parsing on every version.
+    if any(character in value for character in "\r\n\t"):
+        return ""
     try:
         scheme = urlsplit(value).scheme.lower()
     except ValueError:
