@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from beautiful_report.core import ReportBuilder
+from beautiful_report.core import _safe_image_url
 from beautiful_report.decorators import TestContext as _TestContext
 from beautiful_report.decorators import report, set_current_context
 
@@ -23,6 +24,25 @@ def _result(**overrides):
     }
     result.update(overrides)
     return result
+
+
+@pytest.mark.parametrize("url", ["javascript:alert(1)", "java\nscript:alert(1)", "data:text/html,<script>alert(1)</script>", "data:image/svg+xml,<svg onload=alert(1)>"])
+def test_image_sources_reject_executable_schemes(url):
+    assert _safe_image_url(url) == ""
+
+
+@pytest.mark.parametrize("url", ["images/result.png", "https://example.com/image.png", "data:image/png;base64,aGVsbG8="])
+def test_image_sources_preserve_supported_images(url):
+    assert _safe_image_url(url) == url
+
+
+def test_rendered_screenshot_links_reject_javascript(tmp_path):
+    builder = ReportBuilder(output_dir=str(tmp_path))
+    builder.add_test_result(_result(screenshots=["javascript:alert(1)"]))
+    builder.build_report()
+    html = (tmp_path / "report.html").read_text(encoding="utf-8")
+    assert 'href="javascript:' not in html
+    assert 'src="javascript:' not in html
 
 
 def test_builder_initialization(tmp_path):

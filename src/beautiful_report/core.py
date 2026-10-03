@@ -5,6 +5,7 @@ import re
 import sqlite3
 from datetime import datetime
 from typing import Any, Dict, List
+from urllib.parse import urlsplit
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -22,6 +23,20 @@ _CONTROL_CHARACTERS = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]")
 def _clean_text(value: str) -> str:
     """Remove terminal-only escape sequences while preserving text layout."""
     return _CONTROL_CHARACTERS.sub("", _ANSI_ESCAPE.sub("", value))
+
+
+def _safe_image_url(value: str) -> str:
+    """Allow image sources without allowing executable screenshot links."""
+    value = _clean_text(str(value)).strip()
+    try:
+        scheme = urlsplit(value).scheme.lower()
+    except ValueError:
+        return ""
+    if scheme in ("", "http", "https"):
+        return value
+    if re.match(r"^data:image/(?:png|jpeg|gif|webp);base64,[a-z0-9+/=\s]+$", value, re.IGNORECASE):
+        return value
+    return ""
 
 
 def _clean_for_output(value: Any) -> Any:
@@ -151,6 +166,7 @@ class ReportBuilder:
             loader=FileSystemLoader(template_dir),
             autoescape=select_autoescape(default=True),
         )
+        env.filters["safe_image_url"] = _safe_image_url
         template = env.get_template("report.html.jinja2")
         html_out = template.render(safe_context)
 
