@@ -207,6 +207,10 @@ python -m build
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
+## Author
+
+[Dhiraj Das](https://www.dhirajdas.dev) · [Follow @dkkkkd on X](https://x.com/dkkkkd)
+
 ## License
 
 MIT License. See [LICENSE](LICENSE).
