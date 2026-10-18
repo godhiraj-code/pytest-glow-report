@@ -36,6 +36,7 @@ dependencies = [
 Homepage = "https://github.com/godhiraj-code/pytest-glow-report"
 Repository = "https://github.com/godhiraj-code/pytest-glow-report.git"
 Issues = "https://github.com/godhiraj-code/pytest-glow-report/issues"
+X = "https://x.com/dkkkkd"
 
 [project.optional-dependencies]
 pytest = ["pytest>=6.0"]
