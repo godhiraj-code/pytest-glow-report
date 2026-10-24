@@ -23,7 +23,7 @@
 - Test steps, logs, and embedded PNG/JPEG screenshots
 - Dark and light themes
 
-The HTML includes readable fallback styling for offline use. Tailwind CSS and Alpine.js are loaded from public CDNs for the full styling and interactive experience, so those enhancements require network access when the report is opened.
+Internet access is required for the report styles and interactive controls: Tailwind CSS and Alpine.js are loaded from public CDNs when the report is opened.
 
 ## Installation
 

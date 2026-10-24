@@ -35,7 +35,7 @@ class Sample(unittest.TestCase):
     assert completed.returncode == 0, completed.stdout + completed.stderr
     assert "Running unittest with GlowReport" in completed.stdout
     data = json.loads((tmp_path / "reports" / "report.json").read_text(encoding="utf-8"))
-    assert data["summary"] == {"passed": 1, "failed": 0, "skipped": 0, "errors": 0, "xfailed": 0, "xpassed": 0, "total": 1}
+    assert data["summary"] == {"passed": 1, "failed": 0, "skipped": 0, "error": 0, "xfailed": 0, "xpassed": 0, "total": 1}
     assert "unittest context" in data["tests"][0]["logs"][0]
 
 
@@ -73,7 +73,7 @@ class Outcomes(unittest.TestCase):
 
     assert completed.returncode == 1, completed.stdout + completed.stderr
     data = json.loads((tmp_path / "reports" / "report.json").read_text(encoding="utf-8"))
-    assert data["summary"] == {"passed": 1, "failed": 2, "skipped": 1, "errors": 0, "xfailed": 0, "xpassed": 0, "total": 4}
+    assert data["summary"] == {"passed": 1, "failed": 2, "skipped": 1, "error": 0, "xfailed": 0, "xpassed": 0, "total": 4}
     assert any("value=0" in item["nodeid"] and item["outcome"] == "passed" for item in data["tests"])
     assert any("value=1" in item["nodeid"] and item["outcome"] == "failed" for item in data["tests"])
     assert any(item["longrepr"] == "Unexpected success" for item in data["tests"])

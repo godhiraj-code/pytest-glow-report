@@ -88,7 +88,7 @@ def _make_result(report: pytest.TestReport) -> Dict[str, Any]:
     context = getattr(report, "_glow_report_context", {}) or {}
     outcome = report.outcome
     if report.failed and report.when != "call":
-        outcome = "errors"
+        outcome = "error"
     elif hasattr(report, "wasxfail"):
         outcome = "xfailed" if report.skipped else "xpassed"
     longrepr = str(report.longrepr) if report.longrepr else None
@@ -99,7 +99,7 @@ def _make_result(report: pytest.TestReport) -> Dict[str, Any]:
     return {
         "nodeid": report.nodeid,
         "outcome": outcome,
-        "phase_outcomes": {report.when: outcome} if report.when == "call" or not report.passed else {},
+        "phase_outcomes": {report.when: outcome},
         "duration": report.duration,
         "longrepr": longrepr,
         "sections": list(report.sections),
@@ -129,7 +129,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     numeric_exitstatus = int(exitstatus)
     _builder.context["session_exitstatus"] = numeric_exitstatus
     if numeric_exitstatus != int(pytest.ExitCode.OK) and not any(
-        test.get("outcome") in ("failed", "errors") for test in _builder.tests
+        test.get("outcome") in ("failed", "error") for test in _builder.tests
     ):
         _builder.add_test_result(
             {

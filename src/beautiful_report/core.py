@@ -65,13 +65,16 @@ class HistoryManager:
                     )
                     """
                 )
-                conn.execute("PRAGMA user_version = 1")
+                version = 1
+            if version == 1:
+                conn.execute("ALTER TABLE runs ADD COLUMN errors INTEGER NOT NULL DEFAULT 0")
+                conn.execute("PRAGMA user_version = 2")
 
-    def add_run(self, passed: int, failed: int, skipped: int, duration: float) -> None:
+    def add_run(self, passed: int, failed: int, skipped: int, duration: float, errors: int = 0) -> None:
         with sqlite3.connect(self.db_path) as conn:
             conn.execute(
-                "INSERT INTO runs (timestamp, passed, failed, skipped, duration) VALUES (?, ?, ?, ?, ?)",
-                (datetime.now().isoformat(), passed, failed, skipped, duration),
+                "INSERT INTO runs (timestamp, passed, failed, skipped, duration, errors) VALUES (?, ?, ?, ?, ?, ?)",
+                (datetime.now().isoformat(), passed, failed, skipped, duration, errors),
             )
 
     def get_history(self, limit: int = 10) -> List[Dict[str, Any]]:
@@ -84,7 +87,7 @@ class HistoryManager:
 class ReportBuilder:
     """Collect test results and generate HTML and JSON reports."""
 
-    _OUTCOME_PRIORITY = {"passed": 0, "xpassed": 1, "skipped": 2, "xfailed": 3, "failed": 4, "errors": 5}
+    _OUTCOME_PRIORITY = {"passed": 0, "xpassed": 1, "skipped": 2, "xfailed": 3, "failed": 4, "error": 5}
 
     def __init__(self, output_dir: str = "reports", embed_threshold_kb: int = 50):
         self.output_dir = output_dir
@@ -113,7 +116,14 @@ class ReportBuilder:
         if "phase_outcomes" in result:
             current.setdefault("phase_outcomes", {}).update(result["phase_outcomes"])
         current["duration"] = round(float(current.get("duration", 0)) + float(result.get("duration", 0)), 12)
-        if self._OUTCOME_PRIORITY.get(result.get("outcome", "passed"), 0) > self._OUTCOME_PRIORITY.get(
+        if "phase_outcomes" in current:
+            outcomes = [
+                outcome for phase, outcome in current["phase_outcomes"].items()
+                if phase == "call" or outcome != "passed"
+            ]
+            if outcomes:
+                current["outcome"] = max(outcomes, key=lambda outcome: self._OUTCOME_PRIORITY.get(outcome, -1))
+        elif self._OUTCOME_PRIORITY.get(result.get("outcome", "passed"), 0) > self._OUTCOME_PRIORITY.get(
             current.get("outcome", "passed"), 0
         ):
             current["outcome"] = result["outcome"]
@@ -136,12 +146,13 @@ class ReportBuilder:
             # Pytest counts call outcomes and non-passing setup/teardown phases.
             # A call result and a teardown error both contribute to its summary.
             outcomes = test.get("phase_outcomes", {"result": test["outcome"]})
-            for outcome in outcomes.values():
-                summary[outcome] += 1
-        summary["total"] = sum(summary.values())
+            for phase, outcome in outcomes.items():
+                if outcome in summary and (phase not in ("setup", "teardown") or outcome != "passed"):
+                    summary[outcome] += 1
+        summary["total"] = len(self.tests)
         passed, failed, skipped = (summary[key] for key in ("passed", "failed", "skipped"))
 
-        self.history.add_run(passed, failed, skipped, duration)
+        self.history.add_run(passed, failed, skipped, duration, errors=summary["error"])
         context: Dict[str, Any] = {
             "title": "Glow Test Report",
             "generated_at": end_time.strftime("%Y-%m-%d %H:%M:%S"),

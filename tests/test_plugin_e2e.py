@@ -59,7 +59,7 @@ def test_ok():
 
     assert completed.returncode == 0, completed.stdout + completed.stderr
     data = load_report(report_dir)
-    assert data["summary"] == {"passed": 1, "failed": 0, "skipped": 0, "errors": 0, "xfailed": 0, "xpassed": 0, "total": 1}
+    assert data["summary"] == {"passed": 1, "failed": 0, "skipped": 0, "error": 0, "xfailed": 0, "xpassed": 0, "total": 1}
     assert len(data["tests"]) == 1
     assert data["tests"][0]["steps"][0]["name"] == "unsafe <step>"
     assert "custom log" in data["tests"][0]["logs"][0]
@@ -119,9 +119,10 @@ def test_failure(resource):
     assert completed.returncode != 0
     data = load_report(report_dir)
     assert data["summary"]["failed"] == (1 if phase == "call" else 0)
-    assert data["summary"]["errors"] == (0 if phase == "call" else 1)
-    assert data["summary"]["total"] == (2 if phase == "teardown" else 1)
-    assert len(data["tests"]) == 1
+    assert data["summary"]["error"] == (0 if phase == "call" else 1)
+    assert data["summary"]["total"] == 1
+    assert len(data["tests"]) == data["summary"]["total"] == 1
+    assert data["tests"][0]["outcome"] == ("failed" if phase == "call" else "error")
     assert f"{phase} boom" in data["tests"][0]["longrepr"]
 
 
@@ -142,7 +143,7 @@ def test_skip(resource):
 
     assert completed.returncode == 0
     data = load_report(report_dir)
-    assert data["summary"] == {"passed": 0, "failed": 0, "skipped": 1, "errors": 0, "xfailed": 0, "xpassed": 0, "total": 1}
+    assert data["summary"] == {"passed": 0, "failed": 0, "skipped": 1, "error": 0, "xfailed": 0, "xpassed": 0, "total": 1}
     assert "No Failures or Errors" in (report_dir / "report.html").read_text(encoding="utf-8")
 
 
