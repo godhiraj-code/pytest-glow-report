@@ -3,7 +3,7 @@
 project = 'pytest-glow-report'
 copyright = '2025, Dhiraj Das'
 author = 'Dhiraj Das'
-release = '0.1.0'
+release = '0.1.4'
 
 extensions = [
     'sphinx.ext.autodoc',

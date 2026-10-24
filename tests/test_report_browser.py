@@ -1,5 +1,6 @@
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import re
 from threading import Thread
 
 import pytest
@@ -64,3 +65,33 @@ def test_rendered_report_copies_literal_error_and_cleans_log_control_codes(tmp_p
         server.shutdown()
         server.server_close()
         server_thread.join(timeout=5)
+
+
+def test_outcome_filters_highlight_matching_result_badges(tmp_path):
+    playwright = pytest.importorskip("playwright.sync_api")
+    builder = ReportBuilder(str(tmp_path))
+    colors = {"error": "rose", "xfailed": "amber", "xpassed": "violet"}
+    for outcome in colors:
+        builder.add_test_result(_result(nodeid=f"test_{outcome}", outcome=outcome))
+    builder.build_report()
+    with playwright.sync_playwright() as runtime:
+        browser = runtime.chromium.launch()
+        try:
+            page = browser.new_page()
+            page.goto((tmp_path / "report.html").as_uri())
+            page.wait_for_function("window.Alpine && document.querySelector('[x-data]')._x_dataStack")
+            for outcome, color in colors.items():
+                button = page.locator(f'[data-filter="{outcome}"]')
+                button.click()
+                playwright.expect(button).to_have_class(re.compile(rf"\bring-{color}-500\b"))
+                assert f"bg-{color}-100" in button.locator("strong").get_attribute("class")
+                badge = page.locator(f'[data-outcome-badge="{outcome}"]')
+                playwright.expect(badge).to_be_visible()
+                assert f"bg-{color}-100" in badge.get_attribute("class")
+                playwright.expect(page.locator('[data-outcome]:visible')).to_have_count(1)
+                for other in colors.keys() - {outcome}:
+                    playwright.expect(page.locator(f'[data-filter="{other}"]')).not_to_have_class(
+                        re.compile(r"\bring-2\b")
+                    )
+        finally:
+            browser.close()

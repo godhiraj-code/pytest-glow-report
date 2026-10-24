@@ -59,7 +59,7 @@ def test_ok():
 
     assert completed.returncode == 0, completed.stdout + completed.stderr
     data = load_report(report_dir)
-    assert data["summary"] == {"passed": 1, "failed": 0, "skipped": 0, "total": 1}
+    assert data["summary"] == {"passed": 1, "failed": 0, "skipped": 0, "error": 0, "xfailed": 0, "xpassed": 0, "total": 1}
     assert len(data["tests"]) == 1
     assert data["tests"][0]["steps"][0]["name"] == "unsafe <step>"
     assert "custom log" in data["tests"][0]["logs"][0]
@@ -118,9 +118,11 @@ def test_failure(resource):
 
     assert completed.returncode != 0
     data = load_report(report_dir)
-    assert data["summary"]["failed"] == 1
+    assert data["summary"]["failed"] == (1 if phase == "call" else 0)
+    assert data["summary"]["error"] == (0 if phase == "call" else 1)
     assert data["summary"]["total"] == 1
-    assert len(data["tests"]) == 1
+    assert len(data["tests"]) == data["summary"]["total"] == 1
+    assert data["tests"][0]["outcome"] == ("failed" if phase == "call" else "error")
     assert f"{phase} boom" in data["tests"][0]["longrepr"]
 
 
@@ -141,8 +143,8 @@ def test_skip(resource):
 
     assert completed.returncode == 0
     data = load_report(report_dir)
-    assert data["summary"] == {"passed": 0, "failed": 0, "skipped": 1, "total": 1}
-    assert "All Tests Passing" not in (report_dir / "report.html").read_text(encoding="utf-8")
+    assert data["summary"] == {"passed": 0, "failed": 0, "skipped": 1, "error": 0, "xfailed": 0, "xpassed": 0, "total": 1}
+    assert "No Failures or Errors" in (report_dir / "report.html").read_text(encoding="utf-8")
 
 
 def test_no_glow_report_disables_all_artifacts(tmp_path):
@@ -159,7 +161,7 @@ def test_zero_collected_tests_cannot_report_all_passing(tmp_path):
     data = load_report(report_dir)
     assert data["summary"]["failed"] == 1
     assert data["session_exitstatus"] == int(pytest.ExitCode.NO_TESTS_COLLECTED)
-    assert "All Tests Passing" not in (report_dir / "report.html").read_text(encoding="utf-8")
+    assert "No Failures or Errors" not in (report_dir / "report.html").read_text(encoding="utf-8")
 
 
 def test_collection_error_cannot_report_all_passing(tmp_path):

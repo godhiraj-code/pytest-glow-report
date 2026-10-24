@@ -86,11 +86,22 @@ def pytest_runtest_makereport(
 
 def _make_result(report: pytest.TestReport) -> Dict[str, Any]:
     context = getattr(report, "_glow_report_context", {}) or {}
+    outcome = report.outcome
+    if report.failed and report.when != "call":
+        outcome = "error"
+    elif hasattr(report, "wasxfail"):
+        outcome = "xfailed" if report.skipped else "xpassed"
+    longrepr = str(report.longrepr) if report.longrepr else None
+    if report.skipped and isinstance(report.longrepr, tuple):
+        longrepr = report.longrepr[2]
+        if longrepr.startswith("Skipped: "):
+            longrepr = longrepr[len("Skipped: "):]
     return {
         "nodeid": report.nodeid,
-        "outcome": report.outcome,
+        "outcome": outcome,
+        "phase_outcomes": {report.when: outcome},
         "duration": report.duration,
-        "longrepr": str(report.longrepr) if report.longrepr else None,
+        "longrepr": longrepr,
         "sections": list(report.sections),
         "steps": list(context.get("steps", [])),
         "screenshots": list(context.get("screenshots", [])),
@@ -118,7 +129,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
     numeric_exitstatus = int(exitstatus)
     _builder.context["session_exitstatus"] = numeric_exitstatus
     if numeric_exitstatus != int(pytest.ExitCode.OK) and not any(
-        test.get("outcome") == "failed" for test in _builder.tests
+        test.get("outcome") in ("failed", "error") for test in _builder.tests
     ):
         _builder.add_test_result(
             {

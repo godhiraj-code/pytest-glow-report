@@ -23,7 +23,7 @@
 - Test steps, logs, and embedded PNG/JPEG screenshots
 - Dark and light themes
 
-The HTML includes readable fallback styling for offline use. Tailwind CSS and Alpine.js are loaded from public CDNs for the full styling and interactive experience, so those enhancements require network access when the report is opened.
+Internet access is required for the report styles and interactive controls: Tailwind CSS and Alpine.js are loaded from public CDNs when the report is opened.
 
 ## Installation
 
@@ -116,6 +116,10 @@ pytest
 Add a logo URL or image data URI in `conftest.py`:
 
 ```python
+import pytest
+
+
+@pytest.hookimpl(optionalhook=True)
 def pytest_html_logo():
     return "https://example.com/logo.png"
 ```
@@ -125,7 +129,10 @@ Add environment metadata:
 ```python
 import os
 
+import pytest
 
+
+@pytest.hookimpl(optionalhook=True)
 def pytest_html_environment():
     return {
         "Browser": "Chrome 120",

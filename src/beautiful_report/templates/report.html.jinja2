@@ -36,6 +36,17 @@
         button, input { font: inherit; }
         pre { white-space: pre-wrap; overflow-wrap: anywhere; }
         
+        .report-brand { min-width: 0; overflow-wrap: anywhere; }
+        .report-brand > :first-child { flex-shrink: 0; }
+        .report-controls { min-width: 0; }
+        .report-controls button { flex: 0 0 44px; min-height: 44px; }
+        @media (max-width: 767px) {
+            header .report-header { height: auto; flex-wrap: wrap; gap: 12px; padding-block: 12px; }
+            .report-brand, .report-controls { width: 100%; }
+            .report-search { flex: 1; min-width: 0; }
+            .report-search input, .report-search input:focus { width: 100%; box-sizing: border-box; }
+        }
+
         /* Animated gradient background */
         @keyframes gradient {
             0%, 100% { background-position: 0% 50%; }
@@ -382,7 +393,7 @@
             });
             
             // Confetti for 100% pass rate
-            {% if summary.total > 0 and summary.failed == 0 and summary.skipped == 0 %}
+            {% if summary.passed > 0 and summary.failed == 0 and summary.error == 0 %}
             setTimeout(() => {
                 const colors = ['#10b981', '#14b8a6', '#06b6d4', '#22d3ee', '#34d399'];
                 for (let i = 0; i < 100; i++) {
@@ -418,10 +429,10 @@
         <!-- Header -->
         <header class="sticky top-0 z-50 glass border-b border-slate-200/50 dark:border-slate-700/50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
+                <div class="report-header flex items-center justify-between h-16">
                     
                     <!-- Logo & Title -->
-                    <div class="flex items-center gap-4">
+                    <div class="report-brand flex items-center gap-4">
                         {% if logo %}
                         <img src="{{ logo }}" alt="Logo" class="h-10 w-auto rounded-xl shadow-lg">
                         {% else %}
@@ -438,9 +449,9 @@
                     </div>
                     
                     <!-- Controls -->
-                    <div class="flex items-center gap-3">
+                    <div class="report-controls flex items-center gap-3">
                         <!-- Search -->
-                        <div class="relative group">
+                        <div class="report-search relative group">
                             <input type="text" x-model="search" placeholder="Search tests..."
                                    class="w-48 md:w-64 pl-10 pr-4 py-2.5 text-sm rounded-xl bg-white/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all focus:w-72">
                             <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -468,10 +479,12 @@
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
             
             <!-- EXECUTIVE SUMMARY - For Business Users -->
-            {% set pass_rate = (summary.passed / summary.total * 100) if summary.total > 0 else 0 %}
+            {% set assessed = summary.passed + summary.failed + summary.error %}
+            {% set pass_rate = (summary.passed / assessed * 100) if assessed else 0 %}
             {% set quality_score = pass_rate %}
-            {% set risk_level = "Low" if pass_rate >= 95 else ("Medium" if pass_rate >= 80 else "High") %}
-            {% set risk_color = "emerald" if pass_rate >= 95 else ("amber" if pass_rate >= 80 else "red") %}
+            {% set problems = summary.failed + summary.error %}
+            {% set risk_level = "High" if problems else ("Low" if summary.passed else "Not assessed") %}
+            {% set risk_color = "red" if problems else ("emerald" if summary.passed else "slate") %}
             {% set avg_duration = (duration / summary.total) if summary.total > 0 else 0 %}
             
             <div class="mb-8 glass rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-2xl">
@@ -518,13 +531,13 @@
                     
                     <!-- Success Rate -->
                     <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
-                        <div class="text-3xl font-black text-emerald-600 dark:text-emerald-400">{{ "%.1f"|format(pass_rate) }}%</div>
+                        <div class="text-3xl font-black text-{{ risk_color }}-600 dark:text-{{ risk_color }}-400">{{ "%.1f"|format(pass_rate) }}%</div>
                         <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Success Rate</div>
                     </div>
                     
                     <!-- Failures -->
                     <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
-                        <div class="text-3xl font-black text-red-600 dark:text-red-400">{{ summary.failed }}</div>
+                        <div class="text-3xl font-black text-red-600 dark:text-red-400">{{ problems }}</div>
                         <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Failures</div>
                     </div>
                     
@@ -543,7 +556,7 @@
                     <!-- Stability (based on history) -->
                     {% if history|length > 1 %}
                     {% set recent_runs = history[:5] %}
-                    {% set stability = (recent_runs | selectattr('failed', 'equalto', 0) | list | length) / (recent_runs | length) * 100 %}
+                    {% set stability = (recent_runs | selectattr('failed', 'equalto', 0) | selectattr('errors', 'equalto', 0) | list | length) / (recent_runs | length) * 100 %}
                     <div class="bg-white/50 dark:bg-slate-800/50 rounded-xl p-4 text-center">
                         <div class="text-3xl font-black text-teal-600 dark:text-teal-400">{{ "%.0f"|format(stability) }}%</div>
                         <div class="text-xs text-slate-500 dark:text-slate-400 mt-1">Stability (5 runs)</div>
@@ -557,15 +570,15 @@
                 </div>
                 
                 <!-- Status Message for Business -->
-                <div class="mt-6 p-4 rounded-xl {% if summary.total > 0 and summary.passed == summary.total %}bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800{% else %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% endif %}">
-                    {% if summary.total > 0 and summary.passed == summary.total %}
+                <div class="mt-6 p-4 rounded-xl {% if summary.failed == 0 and summary.error == 0 %}bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800{% else %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% endif %}">
+                    {% if summary.failed == 0 and summary.error == 0 %}
                     <div class="flex items-center gap-3">
                         <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <div>
-                            <p class="font-semibold text-emerald-700 dark:text-emerald-300">All Tests Passing</p>
-                            <p class="text-sm text-emerald-600 dark:text-emerald-400">The application meets quality standards and is ready for release.</p>
+                            <p class="font-semibold text-emerald-700 dark:text-emerald-300">No Failures or Errors</p>
+                            <p class="text-sm text-emerald-600 dark:text-emerald-400">This run completed without test failures or errors.</p>
                         </div>
                     </div>
                     {% else %}
@@ -574,13 +587,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                         </svg>
                         <div>
-                            {% if summary.failed > 0 %}
-                            <p class="font-semibold text-red-700 dark:text-red-300">{{ summary.failed }} Test{{ "s" if summary.failed > 1 else "" }} Failed</p>
-                            <p class="text-sm text-red-600 dark:text-red-400">Review the failures below before proceeding with release.</p>
-                            {% else %}
-                            <p class="font-semibold text-red-700 dark:text-red-300">No Tests Passed</p>
-                            <p class="text-sm text-red-600 dark:text-red-400">This run is not an all-passing result.</p>
-                            {% endif %}
+                            <p class="font-semibold text-red-700 dark:text-red-300">{{ summary.failed }} failed, {{ summary.error }} error{{ "s" if summary.error != 1 else "" }}</p>
+                            <p class="text-sm text-red-600 dark:text-red-400">Review the failures and errors below.</p>
                         </div>
                     </div>
                     {% endif %}
@@ -611,6 +619,9 @@
 ✅ Passed:  {{ summary.passed }}
 ❌ Failed:  {{ summary.failed }}
 ⏭️ Skipped: {{ summary.skipped }}
+Errors: {{ summary.error }}
+Xfailed: {{ summary.xfailed }}
+Xpassed: {{ summary.xpassed }}
 📋 Total:   {{ summary.total }}
 
 ⏱️ PERFORMANCE
@@ -626,13 +637,24 @@ Avg per Test:   {{ "%.2f"|format(avg_duration) }}s
 
 📌 STATUS
 ━━━━━━━━
-{% if summary.total > 0 and summary.passed == summary.total %}✅ All tests passing - Ready for release{% elif summary.failed > 0 %}⚠️ {{ summary.failed }} test(s) failed - Review required{% else %}⚠️ No tests passed - Review required{% endif %}
+{% if summary.failed == 0 and summary.error == 0 %}✅ No failures or errors{% else %}⚠️ {{ summary.failed }} failed, {{ summary.error }} error(s) - Review required{% endif %}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Generated by pytest-glow-report
                 </div>
             </div>
             
+            <!-- Additional pytest outcomes -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                {% for outcome, label, color in [('error', 'Errors', 'rose'), ('xfailed', 'Xfailed', 'amber'), ('xpassed', 'Xpassed', 'violet')] %}
+                <button data-filter="{{ outcome }}" @click="filter = '{{ outcome }}'"
+                        :class="{ 'ring-2 ring-{{ color }}-500 ring-offset-2 dark:ring-offset-slate-900': filter === '{{ outcome }}' }"
+                        class="rounded-xl p-4 glass text-left border border-{{ color }}-200 text-{{ color }}-700 dark:text-{{ color }}-300">
+                    <span>{{ label }}</span>: <strong class="rounded-full px-2 bg-{{ color }}-100 dark:bg-{{ color }}-900/30">{{ summary[outcome] }}</strong>
+                </button>
+                {% endfor %}
+            </div>
+
             <!-- Summary Cards - CLICKABLE -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 
@@ -669,7 +691,6 @@ Generated by pytest-glow-report
                             </svg>
                         </div>
                     </div>
-                    {% set pass_rate = (summary.passed / summary.total * 100) if summary.total > 0 else 0 %}
                     <div class="mt-3 h-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full overflow-hidden">
                         <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-1000" style="width: {{ pass_rate }}%"></div>
                     </div>
@@ -750,7 +771,7 @@ Generated by pytest-glow-report
                     {% if history|length > 0 %}
                     <div class="flex items-end gap-2 h-40">
                         {% for run in history|reverse %}
-                        {% set total = run.passed + run.failed + run.skipped %}
+                        {% set total = run.passed + run.failed + run.errors + run.skipped %}
                         <div class="flex-1 flex flex-col items-center group cursor-pointer">
                             <div class="w-full relative">
                                 <!-- Tooltip -->
@@ -759,7 +780,7 @@ Generated by pytest-glow-report
                                         <div class="font-bold mb-2">{{ run.timestamp[:10] }}</div>
                                         <div class="flex gap-4">
                                             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> {{ run.passed }}</span>
-                                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span> {{ run.failed }}</span>
+                                            <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-red-400"></span> {{ run.failed }} failed, {{ run.errors }} errors</span>
                                             <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400"></span> {{ run.skipped }}</span>
                                         </div>
                                         <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-3 h-3 bg-slate-900 dark:bg-slate-700 rotate-45"></div>
@@ -770,7 +791,7 @@ Generated by pytest-glow-report
                                 <div class="w-full h-32 rounded-xl overflow-hidden flex flex-col-reverse bg-slate-100 dark:bg-slate-800 group-hover:scale-105 transition-transform shadow-inner">
                                     {% if total > 0 %}
                                     <div class="w-full bg-gradient-to-t from-emerald-500 to-emerald-400 transition-all duration-500" style="height: {{ run.passed / total * 100 }}%"></div>
-                                    <div class="w-full bg-gradient-to-t from-red-500 to-red-400 transition-all duration-500" style="height: {{ run.failed / total * 100 }}%"></div>
+                                    <div class="w-full bg-gradient-to-t from-red-500 to-red-400 transition-all duration-500" style="height: {{ (run.failed + run.errors) / total * 100 }}%"></div>
                                     <div class="w-full bg-gradient-to-t from-amber-500 to-amber-400 transition-all duration-500" style="height: {{ run.skipped / total * 100 }}%"></div>
                                     {% endif %}
                                 </div>
@@ -781,7 +802,7 @@ Generated by pytest-glow-report
                     </div>
                     <div class="flex justify-center gap-6 mt-6 text-sm">
                         <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-gradient-to-r from-emerald-400 to-emerald-600"></span> Passed</span>
-                        <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-gradient-to-r from-red-400 to-red-600"></span> Failed</span>
+                        <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-gradient-to-r from-red-400 to-red-600"></span> Failed / Errors</span>
                         <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-gradient-to-r from-amber-400 to-amber-600"></span> Skipped</span>
                     </div>
                     {% else %}
@@ -832,7 +853,7 @@ Generated by pytest-glow-report
                             </svg>
                         </div>
                         Test Results
-                        <span class="ml-auto text-sm font-normal text-slate-500 dark:text-slate-400" x-text="`Showing ${filteredCount} of {{ summary.total }} tests`"></span>
+                        <span class="ml-auto text-sm font-normal text-slate-500 dark:text-slate-400" x-text="`Showing ${filteredCount} of {{ tests|length }} tests`"></span>
                     </h2>
                 </div>
                 
@@ -859,7 +880,7 @@ Generated by pytest-glow-report
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
                                 </svg>
                             </div>
-                            {% elif test.outcome == 'failed' %}
+                            {% elif test.outcome in ('failed', 'error') %}
                             <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/30 animate-pulse">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>
@@ -876,6 +897,10 @@ Generated by pytest-glow-report
                             <!-- Test Info -->
                             <div class="flex-1 min-w-0">
                                 <p class="font-semibold text-sm truncate">{{ test.nodeid }}</p>
+                                {% if test.outcome in ('error', 'xfailed', 'xpassed') %}
+                                {% set outcome_color = {'error': 'rose', 'xfailed': 'amber', 'xpassed': 'violet'}[test.outcome] %}
+                                <span data-outcome-badge="{{ test.outcome }}" class="text-xs rounded-full px-2 bg-{{ outcome_color }}-100 text-{{ outcome_color }}-700 dark:bg-{{ outcome_color }}-900/30 dark:text-{{ outcome_color }}-300">{{ test.outcome }}</span>
+                                {% endif %}
                                 <div class="flex items-center gap-3 mt-1">
                                     <span class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                                         <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">

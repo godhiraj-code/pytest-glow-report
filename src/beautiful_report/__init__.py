@@ -2,7 +2,7 @@
 pytest-glow-report: Beautiful, glowing HTML test reports.
 """
 
-from ._version import __version__
+__version__ = "0.1.4"
 from .core import ReportBuilder
 from .decorators import report
 

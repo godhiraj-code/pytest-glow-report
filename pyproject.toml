@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
@@ -43,6 +43,7 @@ pytest = ["pytest>=6.0"]
 pdf = ["weasyprint"]
 slack = ["slack_sdk"]
 dev = [
+    "build",
     "ruff",
     "black",
     "mypy",
@@ -50,6 +51,7 @@ dev = [
     "sphinx",
     "playwright",
     "pytest-regressions",
+    "pytest-rerunfailures",
     "pytest>=6.0", # Dev needs pytest for testing the plugin
 ]
 
@@ -60,10 +62,7 @@ glow-report = "beautiful_report.cli:main"
 glow_report = "beautiful_report.plugin"
 
 [tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "src/beautiful_report/_version.py"
+path = "src/beautiful_report/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/beautiful_report"]
