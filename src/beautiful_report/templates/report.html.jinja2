@@ -36,6 +36,17 @@
         button, input { font: inherit; }
         pre { white-space: pre-wrap; overflow-wrap: anywhere; }
         
+        .report-brand { min-width: 0; overflow-wrap: anywhere; }
+        .report-brand > :first-child { flex-shrink: 0; }
+        .report-controls { min-width: 0; }
+        .report-controls button { flex: 0 0 44px; min-height: 44px; }
+        @media (max-width: 767px) {
+            header .report-header { height: auto; flex-wrap: wrap; gap: 12px; padding-block: 12px; }
+            .report-brand, .report-controls { width: 100%; }
+            .report-search { flex: 1; min-width: 0; }
+            .report-search input, .report-search input:focus { width: 100%; box-sizing: border-box; }
+        }
+
         /* Animated gradient background */
         @keyframes gradient {
             0%, 100% { background-position: 0% 50%; }
@@ -382,7 +393,7 @@
             });
             
             // Confetti for 100% pass rate
-            {% if summary.total > 0 and summary.failed == 0 and summary.skipped == 0 %}
+            {% if summary.failed == 0 and summary.errors == 0 %}
             setTimeout(() => {
                 const colors = ['#10b981', '#14b8a6', '#06b6d4', '#22d3ee', '#34d399'];
                 for (let i = 0; i < 100; i++) {
@@ -418,10 +429,10 @@
         <!-- Header -->
         <header class="sticky top-0 z-50 glass border-b border-slate-200/50 dark:border-slate-700/50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex items-center justify-between h-16">
+                <div class="report-header flex items-center justify-between h-16">
                     
                     <!-- Logo & Title -->
-                    <div class="flex items-center gap-4">
+                    <div class="report-brand flex items-center gap-4">
                         {% if logo %}
                         <img src="{{ logo }}" alt="Logo" class="h-10 w-auto rounded-xl shadow-lg">
                         {% else %}
@@ -438,9 +449,9 @@
                     </div>
                     
                     <!-- Controls -->
-                    <div class="flex items-center gap-3">
+                    <div class="report-controls flex items-center gap-3">
                         <!-- Search -->
-                        <div class="relative group">
+                        <div class="report-search relative group">
                             <input type="text" x-model="search" placeholder="Search tests..."
                                    class="w-48 md:w-64 pl-10 pr-4 py-2.5 text-sm rounded-xl bg-white/70 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all focus:w-72">
                             <svg class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -468,10 +479,11 @@
         <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative">
             
             <!-- EXECUTIVE SUMMARY - For Business Users -->
-            {% set pass_rate = (summary.passed / summary.total * 100) if summary.total > 0 else 0 %}
+            {% set assessed = summary.passed + summary.failed + summary.errors %}
+            {% set pass_rate = (summary.passed / assessed * 100) if assessed else 100 %}
             {% set quality_score = pass_rate %}
             {% set risk_level = "Low" if pass_rate >= 95 else ("Medium" if pass_rate >= 80 else "High") %}
-            {% set risk_color = "emerald" if pass_rate >= 95 else ("amber" if pass_rate >= 80 else "red") %}
+            {% set risk_color = "emerald" if summary.failed == 0 and summary.errors == 0 else "red" %}
             {% set avg_duration = (duration / summary.total) if summary.total > 0 else 0 %}
             
             <div class="mb-8 glass rounded-3xl p-8 border border-slate-200/50 dark:border-slate-700/50 shadow-2xl">
@@ -557,15 +569,15 @@
                 </div>
                 
                 <!-- Status Message for Business -->
-                <div class="mt-6 p-4 rounded-xl {% if summary.total > 0 and summary.passed == summary.total %}bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800{% else %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% endif %}">
-                    {% if summary.total > 0 and summary.passed == summary.total %}
+                <div class="mt-6 p-4 rounded-xl {% if summary.failed == 0 and summary.errors == 0 %}bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800{% else %}bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800{% endif %}">
+                    {% if summary.failed == 0 and summary.errors == 0 %}
                     <div class="flex items-center gap-3">
                         <svg class="w-6 h-6 text-emerald-600 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         <div>
-                            <p class="font-semibold text-emerald-700 dark:text-emerald-300">All Tests Passing</p>
-                            <p class="text-sm text-emerald-600 dark:text-emerald-400">The application meets quality standards and is ready for release.</p>
+                            <p class="font-semibold text-emerald-700 dark:text-emerald-300">No Failures or Errors</p>
+                            <p class="text-sm text-emerald-600 dark:text-emerald-400">This run completed without test failures or errors.</p>
                         </div>
                     </div>
                     {% else %}
@@ -578,7 +590,7 @@
                             <p class="font-semibold text-red-700 dark:text-red-300">{{ summary.failed }} Test{{ "s" if summary.failed > 1 else "" }} Failed</p>
                             <p class="text-sm text-red-600 dark:text-red-400">Review the failures below before proceeding with release.</p>
                             {% else %}
-                            <p class="font-semibold text-red-700 dark:text-red-300">No Tests Passed</p>
+                            <p class="font-semibold text-red-700 dark:text-red-300">{{ summary.errors }} Test Error{{ "s" if summary.errors != 1 else "" }}</p>
                             <p class="text-sm text-red-600 dark:text-red-400">This run is not an all-passing result.</p>
                             {% endif %}
                         </div>
@@ -611,6 +623,9 @@
 ✅ Passed:  {{ summary.passed }}
 ❌ Failed:  {{ summary.failed }}
 ⏭️ Skipped: {{ summary.skipped }}
+Errors: {{ summary.errors }}
+Xfailed: {{ summary.xfailed }}
+Xpassed: {{ summary.xpassed }}
 📋 Total:   {{ summary.total }}
 
 ⏱️ PERFORMANCE
@@ -626,13 +641,22 @@ Avg per Test:   {{ "%.2f"|format(avg_duration) }}s
 
 📌 STATUS
 ━━━━━━━━
-{% if summary.total > 0 and summary.passed == summary.total %}✅ All tests passing - Ready for release{% elif summary.failed > 0 %}⚠️ {{ summary.failed }} test(s) failed - Review required{% else %}⚠️ No tests passed - Review required{% endif %}
+{% if summary.failed == 0 and summary.errors == 0 %}✅ No failures or errors{% elif summary.failed > 0 %}⚠️ {{ summary.failed }} test(s) failed - Review required{% else %}⚠️ {{ summary.errors }} error(s) - Review required{% endif %}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Generated by pytest-glow-report
                 </div>
             </div>
             
+            <!-- Additional pytest outcomes -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                {% for outcome, label in [('errors', 'Errors'), ('xfailed', 'Xfailed'), ('xpassed', 'Xpassed')] %}
+                <button @click="filter = '{{ outcome }}'" class="rounded-xl p-4 glass text-left">
+                    <span>{{ label }}</span>: <strong>{{ summary[outcome] }}</strong>
+                </button>
+                {% endfor %}
+            </div>
+
             <!-- Summary Cards - CLICKABLE -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                 
@@ -669,7 +693,6 @@ Generated by pytest-glow-report
                             </svg>
                         </div>
                     </div>
-                    {% set pass_rate = (summary.passed / summary.total * 100) if summary.total > 0 else 0 %}
                     <div class="mt-3 h-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full overflow-hidden">
                         <div class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full transition-all duration-1000" style="width: {{ pass_rate }}%"></div>
                     </div>
@@ -832,7 +855,7 @@ Generated by pytest-glow-report
                             </svg>
                         </div>
                         Test Results
-                        <span class="ml-auto text-sm font-normal text-slate-500 dark:text-slate-400" x-text="`Showing ${filteredCount} of {{ summary.total }} tests`"></span>
+                        <span class="ml-auto text-sm font-normal text-slate-500 dark:text-slate-400" x-text="`Showing ${filteredCount} of {{ tests|length }} tests`"></span>
                     </h2>
                 </div>
                 
@@ -859,7 +882,7 @@ Generated by pytest-glow-report
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
                                 </svg>
                             </div>
-                            {% elif test.outcome == 'failed' %}
+                            {% elif test.outcome in ('failed', 'errors') %}
                             <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-red-500/30 animate-pulse">
                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/>

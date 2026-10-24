@@ -15,6 +15,9 @@ def pytest_html_logo() -> Optional[str]:
     Return a URL or base64-encoded image string for the report logo.
     
     Example in conftest.py:
+        import pytest
+
+        @pytest.hookimpl(optionalhook=True)
         def pytest_html_logo():
             return "https://example.com/logo.png"
     """
@@ -26,6 +29,9 @@ def pytest_html_environment() -> Optional[Dict[str, str]]:
     Return a dictionary of environment info to display in the report.
     
     Example in conftest.py:
+        import pytest
+
+        @pytest.hookimpl(optionalhook=True)
         def pytest_html_environment():
             return {"Browser": "Chrome", "Environment": "staging"}
     """

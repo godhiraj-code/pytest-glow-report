@@ -116,6 +116,10 @@ pytest
 Add a logo URL or image data URI in `conftest.py`:
 
 ```python
+import pytest
+
+
+@pytest.hookimpl(optionalhook=True)
 def pytest_html_logo():
     return "https://example.com/logo.png"
 ```
@@ -125,7 +129,10 @@ Add environment metadata:
 ```python
 import os
 
+import pytest
 
+
+@pytest.hookimpl(optionalhook=True)
 def pytest_html_environment():
     return {
         "Browser": "Chrome 120",

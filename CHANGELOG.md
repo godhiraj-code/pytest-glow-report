@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.4] - Unreleased
+
+### Fixed
+- Mark every documented custom hook implementation optional so disabling Glow does not crash pytest.
+- Count setup/teardown errors, expected failures, and unexpected passes separately, matching pytest's summary; show plain skip reasons.
+- Treat runs without failures or errors as successful and exclude skipped/expected outcomes from the pass-rate denominator (100% when empty).
+- Wrap the report header and constrain the search field on mobile so the theme toggle stays reachable.
+
 ## [0.1.1] - Unreleased
 
 ### Fixed

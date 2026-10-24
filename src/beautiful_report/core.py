@@ -84,7 +84,7 @@ class HistoryManager:
 class ReportBuilder:
     """Collect test results and generate HTML and JSON reports."""
 
-    _OUTCOME_PRIORITY = {"passed": 0, "skipped": 1, "failed": 2}
+    _OUTCOME_PRIORITY = {"passed": 0, "xpassed": 1, "skipped": 2, "xfailed": 3, "failed": 4, "errors": 5}
 
     def __init__(self, output_dir: str = "reports", embed_threshold_kb: int = 50):
         self.output_dir = output_dir
@@ -110,6 +110,8 @@ class ReportBuilder:
             return
 
         current = self.tests[self._test_indexes[nodeid]]
+        if "phase_outcomes" in result:
+            current.setdefault("phase_outcomes", {}).update(result["phase_outcomes"])
         current["duration"] = round(float(current.get("duration", 0)) + float(result.get("duration", 0)), 12)
         if self._OUTCOME_PRIORITY.get(result.get("outcome", "passed"), 0) > self._OUTCOME_PRIORITY.get(
             current.get("outcome", "passed"), 0
@@ -129,16 +131,22 @@ class ReportBuilder:
     def build_report(self) -> None:
         end_time = datetime.now()
         duration = (end_time - self.start_time).total_seconds()
-        passed = sum(1 for test in self.tests if test["outcome"] == "passed")
-        failed = sum(1 for test in self.tests if test["outcome"] == "failed")
-        skipped = sum(1 for test in self.tests if test["outcome"] == "skipped")
+        summary = dict.fromkeys(self._OUTCOME_PRIORITY, 0)
+        for test in self.tests:
+            # Pytest counts call outcomes and non-passing setup/teardown phases.
+            # A call result and a teardown error both contribute to its summary.
+            outcomes = test.get("phase_outcomes", {"result": test["outcome"]})
+            for outcome in outcomes.values():
+                summary[outcome] += 1
+        summary["total"] = sum(summary.values())
+        passed, failed, skipped = (summary[key] for key in ("passed", "failed", "skipped"))
 
         self.history.add_run(passed, failed, skipped, duration)
         context: Dict[str, Any] = {
             "title": "Glow Test Report",
             "generated_at": end_time.strftime("%Y-%m-%d %H:%M:%S"),
             "duration": duration,
-            "summary": {"passed": passed, "failed": failed, "skipped": skipped, "total": len(self.tests)},
+            "summary": summary,
             "tests": self.tests,
             "environment": self.env_info,
             "history": self.history.get_history(),
