@@ -1,5 +1,6 @@
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+import re
 from threading import Thread
 
 import pytest
@@ -82,13 +83,15 @@ def test_outcome_filters_highlight_matching_result_badges(tmp_path):
             for outcome, color in colors.items():
                 button = page.locator(f'[data-filter="{outcome}"]')
                 button.click()
-                assert f"ring-{color}-500" in button.get_attribute("class")
+                playwright.expect(button).to_have_class(re.compile(rf"\bring-{color}-500\b"))
                 assert f"bg-{color}-100" in button.locator("strong").get_attribute("class")
                 badge = page.locator(f'[data-outcome-badge="{outcome}"]')
-                assert badge.is_visible()
+                playwright.expect(badge).to_be_visible()
                 assert f"bg-{color}-100" in badge.get_attribute("class")
-                assert page.locator('[data-outcome]:visible').count() == 1
+                playwright.expect(page.locator('[data-outcome]:visible')).to_have_count(1)
                 for other in colors.keys() - {outcome}:
-                    assert "ring-2" not in page.locator(f'[data-filter="{other}"]').get_attribute("class")
+                    playwright.expect(page.locator(f'[data-filter="{other}"]')).not_to_have_class(
+                        re.compile(r"\bring-2\b")
+                    )
         finally:
             browser.close()
