@@ -88,6 +88,13 @@ def test_outcome_filters_highlight_matching_result_badges(tmp_path):
                 badge = page.locator(f'[data-outcome-badge="{outcome}"]')
                 playwright.expect(badge).to_be_visible()
                 assert f"bg-{color}-100" in badge.get_attribute("class")
+                showing = page.locator('span[x-text="filter"]')
+                playwright.expect(showing).to_be_visible()
+                playwright.expect(showing).to_have_text(outcome)
+                playwright.expect(showing).to_have_class(re.compile(rf"\bbg-{color}-100\b"))
+                assert f"text-{color}-700" in showing.get_attribute("class")
+                assert f"dark:bg-{color}-900/30" in showing.get_attribute("class")
+                assert f"dark:text-{color}-300" in showing.get_attribute("class")
                 playwright.expect(page.locator('[data-outcome]:visible')).to_have_count(1)
                 for other in colors.keys() - {outcome}:
                     playwright.expect(page.locator(f'[data-filter="{other}"]')).not_to_have_class(

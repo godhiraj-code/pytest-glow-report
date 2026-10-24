@@ -49,6 +49,8 @@ class HistoryManager:
 
     def _init_db(self) -> None:
         with sqlite3.connect(self.db_path) as conn:
+            # Serialize schema inspection and migration across report processes.
+            conn.execute("BEGIN IMMEDIATE")
             cur = conn.cursor()
             cur.execute("PRAGMA user_version")
             version = cur.fetchone()[0]
@@ -67,7 +69,13 @@ class HistoryManager:
                 )
                 version = 1
             if version == 1:
-                conn.execute("ALTER TABLE runs ADD COLUMN errors INTEGER NOT NULL DEFAULT 0")
+                columns = {row[1].lower() for row in conn.execute("PRAGMA table_info(runs)")}
+                if "errors" not in columns:
+                    try:
+                        conn.execute("ALTER TABLE runs ADD COLUMN errors INTEGER NOT NULL DEFAULT 0")
+                    except sqlite3.OperationalError as exc:
+                        if str(exc).lower() != "duplicate column name: errors":
+                            raise
                 conn.execute("PRAGMA user_version = 2")
 
     def add_run(self, passed: int, failed: int, skipped: int, duration: float, errors: int = 0) -> None:

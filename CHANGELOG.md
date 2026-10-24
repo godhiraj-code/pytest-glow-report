@@ -5,6 +5,9 @@ All notable changes to this project will be documented in this file.
 ## [0.1.4] - Unreleased
 
 ### Fixed
+- Serialize history schema migration with `BEGIN IMMEDIATE`, re-check columns under the lock, and safely handle an already-added errors column without hiding unrelated database errors.
+- Match the active Showing badge colours to the error/xfailed/xpassed outcome badges.
+- Pin the CI browser regression dependency to Playwright 1.64.0.
 - Mark all custom hook examples optional. Users who copied older README examples must add `@pytest.hookimpl(optionalhook=True)` (and `import pytest`) to each hook.
 - Handle successful setup/call retries from pytest-rerunfailures without crashing on transient `rerun` outcomes.
 - Count setup/teardown errors separately from failed calls and display plain skip reasons.
