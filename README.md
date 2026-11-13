@@ -218,6 +218,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 
 [Dhiraj Das](https://www.dhirajdas.dev) · [Follow @dkkkkd on X](https://x.com/dkkkkd)
 
+## Learn more
+
+[The Automation Architect's Playbook](https://www.dhirajdas.dev/automation-book) is a free guide. The [pytest-glow-report chapter](https://www.dhirajdas.dev/automation-book#chapter-16-pytest-glow-report-enterprise-grade-reporting) covers turning test results into HTML reports with steps, logs, and screenshots.
+
 ## License
 
 MIT License. See [LICENSE](LICENSE).
