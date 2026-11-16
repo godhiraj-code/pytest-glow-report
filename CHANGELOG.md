@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- Require Python 3.10 or newer, matching the supported CI matrix. Remove Python 3.8/3.9 classifiers and align documentation, Ruff and tox targets.
+
 ## [0.1.4] - Unreleased
 
 ### Fixed
