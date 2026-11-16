@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Python](https://img.shields.io/badge/Python-3.8+-blue?logo=python&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python&logoColor=white)
 ![pytest](https://img.shields.io/badge/pytest-6.0+-green?logo=pytest&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-purple)
 
@@ -39,7 +39,7 @@ pytest itself is an optional dependency. To install it with the plugin:
 pip install "pytest-glow-report[pytest]"
 ```
 
-Python 3.8 or newer and pytest 6.0 or newer are supported.
+Python 3.10 or newer and pytest 6.0 or newer are supported.
 
 ## pytest
 
