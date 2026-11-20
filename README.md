@@ -8,9 +8,19 @@
 
 **HTML and JSON test reports for pytest and unittest**
 
-[Features](#features) • [Installation](#installation) • [pytest](#pytest) • [unittest](#unittest) • [Configuration](#configuration) • [Test-context API](#test-context-api)
+[Quickstart](#quickstart) • [Features](#features) • [Installation](#installation) • [pytest](#pytest) • [unittest](#unittest) • [Configuration](#configuration) • [Test-context API](#test-context-api)
 
 </div>
+
+## Quickstart
+
+```bash
+pip install "pytest-glow-report[pytest]" && pytest
+```
+
+No config is needed. The plugin is on by default and writes `reports/report.html`, `reports/report.json`, and `reports/history.sqlite`.
+
+<!-- TODO: Add 10s demo GIF here -->
 
 ## Features
 
@@ -225,3 +235,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines.
 ## License
 
 MIT License. See [LICENSE](LICENSE).
+
+---
+
+### Related Tools
+* **[`pytest-glow-report`](https://github.com/godhiraj-code/pytest-glow-report)** — Zero-config interactive HTML/JSON reports for `pytest` with SQLite-backed run history.
+* **[`outcomelock`](https://github.com/godhiraj-code/outcomelock)** — Prevent autonomous AI agents from re-executing already completed work with fail-closed terminal assertions.
+* **[`flow2skill`](https://github.com/godhiraj-code/flow2skill)** — Compile Playwright codegen recordings into redacted, review-gated agent skills and `pytest` proofs.
